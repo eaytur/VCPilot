@@ -5,10 +5,11 @@
 #include <optional>
 #include <string>
 
-namespace vcpilot{
+namespace vcpilot {
 
 enum class ErrorCode {
     Unknown,
+    EnumerationFailed,
 };
 
 struct Error {
@@ -17,7 +18,6 @@ struct Error {
     std::optional<std::uint32_t> nativeCode;
 };
 
-template <typename T>
-using Result = std::expected<T, Error>;
+template <typename T> using Result = std::expected<T, Error>;
 
 } // namespace vcpilot

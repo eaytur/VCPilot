@@ -2,6 +2,7 @@ find_package(spdlog REQUIRED)
 
 add_library(vcpilot_core
     src/Logger.cpp
+    src/platform/windows/windows_ddc_backend.cpp
 )
 
 target_compile_features(vcpilot_core
@@ -17,6 +18,8 @@ target_include_directories(vcpilot_core
 target_link_libraries(vcpilot_core
     PRIVATE
         spdlog::spdlog
+        Dxva2
+        Setupapi
     PUBLIC
         fmt::fmt
 )
