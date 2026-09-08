@@ -29,7 +29,7 @@ spdlog::level::level_enum toSpdlogLevel(Level level) {
 
 void initialize() {
     spdlog::set_level(spdlog::level::trace); // TODO: set build type
-    spdlog::set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%l] %v");
+    spdlog::set_pattern("[%Y-%m-%d %H:%M:%S.%e] %^[%l]%$ %v");
 }
 
 void setLevel(Level level) {
