@@ -9,6 +9,9 @@
 #include <devguid.h>
 // clang-format on
 
+#include <lowlevelmonitorconfigurationapi.h>
+
+#include <algorithm>
 #include <iomanip>
 #include <optional>
 #include <sstream>
@@ -210,12 +213,12 @@ void parseEdidInto(const std::vector<std::uint8_t>& edid, MonitorInfo& info) {
         }
     }
 
-    // Some monitors don't provide the text serial descriptor.
+    // Some context don't provide the text serial descriptor.
     if (info.serial.empty() && numericSerial != 0) {
         info.serial = std::to_string(numericSerial);
     }
 
-    // Some monitors don't provide a monitor-name descriptor.
+    // Some context don't provide a monitor-name descriptor.
     // Fall back to the EDID product code.
     if (info.model.empty()) {
 
@@ -228,10 +231,39 @@ void parseEdidInto(const std::vector<std::uint8_t>& edid, MonitorInfo& info) {
 }
 
 // ---------------------------------------------------------------------
-// Called once by EnumDisplayMonitors for every logical monitor.
+// Converts wide to utf8 format
 // ---------------------------------------------------------------------
+std::string WideToUtf8(const wchar_t* wide) {
+    if (!wide || *wide == L'\0') {
+        return {};
+    }
 
-BOOL CALLBACK monitorEnumProc(HMONITOR monitorHandle, HDC, LPRECT, LPARAM data) {
+    const int sizeNeeded = WideCharToMultiByte(CP_UTF8, 0, wide, -1, nullptr, 0, nullptr, nullptr);
+
+    if (sizeNeeded <= 0) {
+        return {};
+    }
+
+    std::string result(static_cast<std::size_t>(sizeNeeded), '\0');
+
+    const int convertedSize =
+        WideCharToMultiByte(CP_UTF8, 0, wide, -1, result.data(), sizeNeeded, nullptr, nullptr);
+
+    if (convertedSize <= 0) {
+        return {};
+    }
+
+    result.pop_back();
+
+    return result;
+}
+} // namespace
+
+WindowsDdcBackend::~WindowsDdcBackend() {
+    clearMonitorHandles();
+}
+
+BOOL CALLBACK WindowsDdcBackend::monitorEnumProc(HMONITOR monitorHandle, HDC, LPRECT, LPARAM data) {
     MONITORINFOEXW monitorInfo{};
     monitorInfo.cbSize = sizeof(monitorInfo);
 
@@ -243,10 +275,13 @@ BOOL CALLBACK monitorEnumProc(HMONITOR monitorHandle, HDC, LPRECT, LPARAM data) 
     displayDevice.cb = sizeof(displayDevice);
 
     if (!EnumDisplayDevicesW(monitorInfo.szDevice, 0, &displayDevice, 0)) {
-        return FALSE;
+        VCPLOG_WARN("EnumDisplayDevicesW failed, native error={}", GetLastError());
+        return TRUE; // skip this monitor, keep enumerating
     }
 
     MonitorInfo info;
+
+    info.id = WideToUtf8(displayDevice.DeviceID);
 
     info.isPrimary = (monitorInfo.dwFlags & MONITORINFOF_PRIMARY) != 0;
 
@@ -264,36 +299,164 @@ BOOL CALLBACK monitorEnumProc(HMONITOR monitorHandle, HDC, LPRECT, LPARAM data) 
         parseEdidInto(*edid, info);
     }
 
-    auto* monitors = reinterpret_cast<std::vector<MonitorInfo>*>(data);
+    DWORD physicalMonitorCount = 0;
 
-    monitors->push_back(std::move(info));
+    if (!GetNumberOfPhysicalMonitorsFromHMONITOR(monitorHandle, &physicalMonitorCount)) {
+        VCPLOG_WARN("GetNumberOfPhysicalMonitorsFromHMONITOR failed, native error={}",
+                    GetLastError());
+
+        return TRUE;
+    }
+
+    std::vector<PHYSICAL_MONITOR> physicalMonitors(physicalMonitorCount);
+
+    if (!GetPhysicalMonitorsFromHMONITOR(monitorHandle, physicalMonitorCount,
+                                         physicalMonitors.data())) {
+        VCPLOG_WARN("GetPhysicalMonitorsFromHMONITOR failed, native error={}", GetLastError());
+
+        return TRUE;
+    }
+
+    MonitorHandleEntry handleEntry;
+    handleEntry.id = info.id;
+    handleEntry.logicalHandle = monitorHandle;
+    handleEntry.physicalMonitors = std::move(physicalMonitors);
+
+    auto* context = reinterpret_cast<EnumerationContext*>(data);
+
+    context->handles.push_back(std::move(handleEntry));
+    context->monitors.push_back(std::move(info));
 
     return TRUE;
 }
 
-} // namespace
-
 Result<std::vector<MonitorInfo>> WindowsDdcBackend::listMonitors() {
-    std::vector<MonitorInfo> monitors;
+    EnumerationContext context;
 
     const BOOL result =
-        EnumDisplayMonitors(nullptr, nullptr, monitorEnumProc, reinterpret_cast<LPARAM>(&monitors));
+        EnumDisplayMonitors(nullptr, nullptr, monitorEnumProc, reinterpret_cast<LPARAM>(&context));
 
     if (!result) {
+        const DWORD error = GetLastError();
+
+        destroyMonitorHandles(context.handles);
+
         return std::unexpected(Error{.code = ErrorCode::EnumerationFailed,
                                      .message = "Failed to enumerate monitors",
-                                     .nativeCode = GetLastError()});
+                                     .nativeCode = error});
     }
 
-    for (const auto& monitor : monitors) {
+    for (const auto& monitor : context.monitors) {
         VCPLOG_TRACE("Monitor: manufacturer='{}', model='{}', "
-                     "serial='{}', primary={}, {}x{}, x={}, y={},",
+                     "serial='{}', primary={}, {}x{}, x={}, y={}",
                      monitor.manufacturer, monitor.model, monitor.serial, monitor.isPrimary,
                      monitor.bounds.width, monitor.bounds.height, monitor.bounds.x,
                      monitor.bounds.y);
     }
 
-    return monitors;
+    clearMonitorHandles();
+    m_monitorHandles = std::move(context.handles);
+
+    return std::move(context.monitors);
+}
+
+void WindowsDdcBackend::clearMonitorHandles() {
+    destroyMonitorHandles(m_monitorHandles);
+}
+
+void WindowsDdcBackend::destroyMonitorHandles(std::vector<MonitorHandleEntry>& handles) {
+    for (auto& entry : handles) {
+        if (!entry.physicalMonitors.empty()) {
+            DestroyPhysicalMonitors(static_cast<DWORD>(entry.physicalMonitors.size()),
+                                    entry.physicalMonitors.data());
+        }
+    }
+
+    handles.clear();
+}
+Result<VcpValue> WindowsDdcBackend::getVcp(const std::string& monitorId, std::uint8_t code) {
+    VCPLOG_TRACE("getVcp: monitorId='{}', code=0x{:02X}", monitorId, code);
+
+    auto it = std::find_if(
+        m_monitorHandles.begin(), m_monitorHandles.end(),
+        [&monitorId](const MonitorHandleEntry& entry) { return entry.id == monitorId; });
+
+    if (it == m_monitorHandles.end()) {
+        VCPLOG_DEBUG("getVcp failed: monitor not found");
+
+        return std::unexpected(Error{.code = ErrorCode::MonitorNotFound,
+                                     .message = "Monitor not found",
+                                     .nativeCode = std::nullopt});
+    }
+
+    if (it->physicalMonitors.empty()) {
+        VCPLOG_DEBUG("getVcp failed: no physical monitor handles");
+
+        return std::unexpected(Error{.code = ErrorCode::VcpReadFailed,
+                                     .message = "Monitor has no physical monitor handles",
+                                     .nativeCode = std::nullopt});
+    }
+
+    DWORD currentValue = 0;
+    DWORD maximumValue = 0;
+
+    if (!GetVCPFeatureAndVCPFeatureReply(it->physicalMonitors[0].hPhysicalMonitor, code, nullptr,
+                                         &currentValue, &maximumValue)) {
+
+        const DWORD error = GetLastError();
+
+        VCPLOG_DEBUG("getVcp failed: code=0x{:02X}, nativeError={}", code, error);
+
+        return std::unexpected(Error{.code = ErrorCode::VcpReadFailed,
+                                     .message = "Failed to read VCP feature",
+                                     .nativeCode = error});
+    }
+
+    VCPLOG_TRACE("getVcp succeeded: code=0x{:02X}, current={}, maximum={}", code, currentValue,
+                 maximumValue);
+
+    return VcpValue{.current = static_cast<std::uint16_t>(currentValue),
+                    .maximum = static_cast<std::uint16_t>(maximumValue)};
+}
+
+Result<void> WindowsDdcBackend::setVcp(const std::string& monitorId, std::uint8_t code,
+                                       std::uint16_t value) {
+    VCPLOG_TRACE("setVcp: monitorId='{}', code=0x{:02X}, value={}", monitorId, code, value);
+
+    auto it = std::find_if(
+        m_monitorHandles.begin(), m_monitorHandles.end(),
+        [&monitorId](const MonitorHandleEntry& entry) { return entry.id == monitorId; });
+
+    if (it == m_monitorHandles.end()) {
+        VCPLOG_DEBUG("setVcp failed: monitor not found");
+
+        return std::unexpected(Error{.code = ErrorCode::MonitorNotFound,
+                                     .message = "Monitor not found",
+                                     .nativeCode = std::nullopt});
+    }
+
+    if (it->physicalMonitors.empty()) {
+        VCPLOG_DEBUG("setVcp failed: no physical monitor handles");
+
+        return std::unexpected(Error{.code = ErrorCode::VcpWriteFailed,
+                                     .message = "Monitor has no physical monitor handles",
+                                     .nativeCode = std::nullopt});
+    }
+
+    if (!SetVCPFeature(it->physicalMonitors[0].hPhysicalMonitor, code, static_cast<DWORD>(value))) {
+
+        const DWORD error = GetLastError();
+
+        VCPLOG_DEBUG("setVcp failed: code=0x{:02X}, value={}, nativeError={}", code, value, error);
+
+        return std::unexpected(Error{.code = ErrorCode::VcpWriteFailed,
+                                     .message = "Failed to write VCP feature",
+                                     .nativeCode = error});
+    }
+
+    VCPLOG_TRACE("setVcp succeeded: code=0x{:02X}, value={}", code, value);
+
+    return {};
 }
 
 } // namespace vcpilot

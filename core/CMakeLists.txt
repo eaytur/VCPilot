@@ -1,8 +1,9 @@
 find_package(spdlog REQUIRED)
 
 add_library(vcpilot_core
-    src/Logger.cpp
+    src/logger.cpp
     src/platform/windows/windows_ddc_backend.cpp
+    src/monitor_controller.cpp
 )
 
 target_compile_features(vcpilot_core

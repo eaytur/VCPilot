@@ -12,6 +12,10 @@ Currently implemented:
 - Monitor information retrieval
 - EDID parsing for manufacturer, model, and serial information
 - Multi-monitor position and primary monitor detection
+- DDC/CI VCP feature reading and writing
+- High-level monitor control API
+- Brightness control
+- Input source detection and switching
 
 DDC/CI VCP control is the next development step.
 
