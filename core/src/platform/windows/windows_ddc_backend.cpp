@@ -330,7 +330,7 @@ BOOL CALLBACK WindowsDdcBackend::monitorEnumProc(HMONITOR monitorHandle, HDC, LP
     return TRUE;
 }
 
-Result<std::vector<MonitorInfo>> WindowsDdcBackend::listMonitors() {
+Result<WindowsDdcBackend::EnumerationContext> WindowsDdcBackend::enumerateMonitors() {
     EnumerationContext context;
 
     const BOOL result =
@@ -341,10 +341,23 @@ Result<std::vector<MonitorInfo>> WindowsDdcBackend::listMonitors() {
 
         destroyMonitorHandles(context.handles);
 
-        return std::unexpected(Error{.code = ErrorCode::EnumerationFailed,
-                                     .message = "Failed to enumerate monitors",
-                                     .nativeCode = error});
+        return std::unexpected(Error{
+            .code = ErrorCode::EnumerationFailed,
+            .message = "Failed to enumerate monitors",
+            .nativeCode = error,
+        });
     }
+    return context;
+}
+
+Result<std::vector<MonitorInfo>> WindowsDdcBackend::listMonitors() {
+    auto enumerationResult = enumerateMonitors();
+
+    if (!enumerationResult) {
+        return std::unexpected(enumerationResult.error());
+    }
+
+    auto context = std::move(*enumerationResult);
 
     for (const auto& monitor : context.monitors) {
         VCPLOG_TRACE("Monitor: manufacturer='{}', model='{}', "
@@ -358,6 +371,31 @@ Result<std::vector<MonitorInfo>> WindowsDdcBackend::listMonitors() {
     m_monitorHandles = std::move(context.handles);
 
     return std::move(context.monitors);
+}
+
+Result<void> WindowsDdcBackend::refreshMonitorHandles() {
+    VCPLOG_DEBUG("Refreshing physical monitor handles");
+
+    auto enumerationResult = enumerateMonitors();
+
+    if (!enumerationResult) {
+        VCPLOG_DEBUG("Failed to refresh physical monitor handles: "
+                     "msg={} code={}",
+                     enumerationResult.error().message,
+                     vcpilot::toString(enumerationResult.error().code));
+
+        return std::unexpected(enumerationResult.error());
+    }
+
+    auto context = std::move(*enumerationResult);
+
+    clearMonitorHandles();
+
+    m_monitorHandles = std::move(context.handles);
+
+    VCPLOG_DEBUG("Physical monitor handles refreshed successfully");
+
+    return {};
 }
 
 void WindowsDdcBackend::clearMonitorHandles() {
@@ -374,8 +412,16 @@ void WindowsDdcBackend::destroyMonitorHandles(std::vector<MonitorHandleEntry>& h
 
     handles.clear();
 }
-Result<VcpValue> WindowsDdcBackend::getVcp(const std::string& monitorId, std::uint8_t code) {
-    VCPLOG_TRACE("getVcp: monitorId='{}', code=0x{:02X}", monitorId, code);
+
+// -----------------------------------------------------------------------------
+// Internal VCP read
+//
+// Performs exactly one VCP operation using the currently cached handles.
+// No refresh and no retry are performed here.
+// -----------------------------------------------------------------------------
+
+Result<VcpValue> WindowsDdcBackend::getVcpInternal(const std::string& monitorId,
+                                                   std::uint8_t code) {
 
     auto it = std::find_if(
         m_monitorHandles.begin(), m_monitorHandles.end(),
@@ -384,17 +430,21 @@ Result<VcpValue> WindowsDdcBackend::getVcp(const std::string& monitorId, std::ui
     if (it == m_monitorHandles.end()) {
         VCPLOG_DEBUG("getVcp failed: monitor not found");
 
-        return std::unexpected(Error{.code = ErrorCode::MonitorNotFound,
-                                     .message = "Monitor not found",
-                                     .nativeCode = std::nullopt});
+        return std::unexpected(Error{
+            .code = ErrorCode::MonitorNotFound,
+            .message = "Monitor not found",
+            .nativeCode = std::nullopt,
+        });
     }
 
     if (it->physicalMonitors.empty()) {
         VCPLOG_DEBUG("getVcp failed: no physical monitor handles");
 
-        return std::unexpected(Error{.code = ErrorCode::VcpReadFailed,
-                                     .message = "Monitor has no physical monitor handles",
-                                     .nativeCode = std::nullopt});
+        return std::unexpected(Error{
+            .code = ErrorCode::VcpReadFailed,
+            .message = "Monitor has no physical monitor handles",
+            .nativeCode = std::nullopt,
+        });
     }
 
     DWORD currentValue = 0;
@@ -407,21 +457,73 @@ Result<VcpValue> WindowsDdcBackend::getVcp(const std::string& monitorId, std::ui
 
         VCPLOG_DEBUG("getVcp failed: code=0x{:02X}, nativeError={}", code, error);
 
-        return std::unexpected(Error{.code = ErrorCode::VcpReadFailed,
-                                     .message = "Failed to read VCP feature",
-                                     .nativeCode = error});
+        return std::unexpected(Error{
+            .code = ErrorCode::VcpReadFailed,
+            .message = "Failed to read VCP feature",
+            .nativeCode = error,
+        });
     }
 
-    VCPLOG_TRACE("getVcp succeeded: code=0x{:02X}, current={}, maximum={}", code, currentValue,
-                 maximumValue);
+    VCPLOG_TRACE("getVcp succeeded: code=0x{:02X}, "
+                 "current={}, maximum={}",
+                 code, currentValue, maximumValue);
 
-    return VcpValue{.current = static_cast<std::uint16_t>(currentValue),
-                    .maximum = static_cast<std::uint16_t>(maximumValue)};
+    return VcpValue{
+        .current = static_cast<std::uint16_t>(currentValue),
+
+        .maximum = static_cast<std::uint16_t>(maximumValue),
+    };
 }
 
-Result<void> WindowsDdcBackend::setVcp(const std::string& monitorId, std::uint8_t code,
-                                       std::uint16_t value) {
-    VCPLOG_TRACE("setVcp: monitorId='{}', code=0x{:02X}, value={}", monitorId, code, value);
+// -----------------------------------------------------------------------------
+// Public VCP read
+//
+// First try the cached handle.
+// If it fails, the handle may have become stale because of a display topology
+// change. Re-enumerate monitors and retry exactly once.
+// -----------------------------------------------------------------------------
+
+Result<VcpValue> WindowsDdcBackend::getVcp(const std::string& monitorId, std::uint8_t code) {
+
+    VCPLOG_TRACE("getVcp: monitorId='{}', code=0x{:02X}", monitorId, code);
+
+    auto result = getVcpInternal(monitorId, code);
+
+    if (result) {
+        return result;
+    }
+
+    const Error originalError = result.error();
+
+    VCPLOG_DEBUG("VCP read failed for monitor '{}'. "
+                 "Refreshing monitor handles and retrying once.",
+                 monitorId);
+
+    auto refreshResult = refreshMonitorHandles();
+
+    if (!refreshResult) {
+        VCPLOG_DEBUG("VCP read retry aborted because "
+                     "monitor handle refresh failed");
+
+        // The operation requested by the caller was the
+        // VCP read, so preserve its original error.
+        return std::unexpected(originalError);
+    }
+
+    VCPLOG_DEBUG("Retrying VCP read for monitor '{}'", monitorId);
+
+    return getVcpInternal(monitorId, code);
+}
+
+// -----------------------------------------------------------------------------
+// Internal VCP write
+//
+// Performs exactly one VCP operation using the currently cached handles.
+// No refresh and no retry are performed here.
+// -----------------------------------------------------------------------------
+
+Result<void> WindowsDdcBackend::setVcpInternal(const std::string& monitorId, std::uint8_t code,
+                                               std::uint16_t value) {
 
     auto it = std::find_if(
         m_monitorHandles.begin(), m_monitorHandles.end(),
@@ -430,33 +532,82 @@ Result<void> WindowsDdcBackend::setVcp(const std::string& monitorId, std::uint8_
     if (it == m_monitorHandles.end()) {
         VCPLOG_DEBUG("setVcp failed: monitor not found");
 
-        return std::unexpected(Error{.code = ErrorCode::MonitorNotFound,
-                                     .message = "Monitor not found",
-                                     .nativeCode = std::nullopt});
+        return std::unexpected(Error{
+            .code = ErrorCode::MonitorNotFound,
+            .message = "Monitor not found",
+            .nativeCode = std::nullopt,
+        });
     }
 
     if (it->physicalMonitors.empty()) {
         VCPLOG_DEBUG("setVcp failed: no physical monitor handles");
 
-        return std::unexpected(Error{.code = ErrorCode::VcpWriteFailed,
-                                     .message = "Monitor has no physical monitor handles",
-                                     .nativeCode = std::nullopt});
+        return std::unexpected(Error{
+            .code = ErrorCode::VcpWriteFailed,
+            .message = "Monitor has no physical monitor handles",
+            .nativeCode = std::nullopt,
+        });
     }
 
     if (!SetVCPFeature(it->physicalMonitors[0].hPhysicalMonitor, code, static_cast<DWORD>(value))) {
 
         const DWORD error = GetLastError();
 
-        VCPLOG_DEBUG("setVcp failed: code=0x{:02X}, value={}, nativeError={}", code, value, error);
+        VCPLOG_DEBUG("setVcp failed: code=0x{:02X}, "
+                     "value={}, nativeError={}",
+                     code, value, error);
 
-        return std::unexpected(Error{.code = ErrorCode::VcpWriteFailed,
-                                     .message = "Failed to write VCP feature",
-                                     .nativeCode = error});
+        return std::unexpected(Error{
+            .code = ErrorCode::VcpWriteFailed,
+            .message = "Failed to write VCP feature",
+            .nativeCode = error,
+        });
     }
 
-    VCPLOG_TRACE("setVcp succeeded: code=0x{:02X}, value={}", code, value);
+    VCPLOG_TRACE("setVcp succeeded: "
+                 "code=0x{:02X}, value={}",
+                 code, value);
 
     return {};
 }
 
+// -----------------------------------------------------------------------------
+// Public VCP write
+//
+// First try the cached handle.
+// On failure, refresh physical monitor handles and retry exactly once.
+// -----------------------------------------------------------------------------
+
+Result<void> WindowsDdcBackend::setVcp(const std::string& monitorId, std::uint8_t code,
+                                       std::uint16_t value) {
+
+    VCPLOG_TRACE("setVcp: monitorId='{}', "
+                 "code=0x{:02X}, value={}",
+                 monitorId, code, value);
+
+    auto result = setVcpInternal(monitorId, code, value);
+
+    if (result) {
+        return result;
+    }
+
+    const Error originalError = result.error();
+
+    VCPLOG_DEBUG("VCP write failed for monitor '{}'. "
+                 "Refreshing monitor handles and retrying once.",
+                 monitorId);
+
+    auto refreshResult = refreshMonitorHandles();
+
+    if (!refreshResult) {
+        VCPLOG_DEBUG("VCP write retry aborted because "
+                     "monitor handle refresh failed");
+
+        return std::unexpected(originalError);
+    }
+
+    VCPLOG_DEBUG("Retrying VCP write for monitor '{}'", monitorId);
+
+    return setVcpInternal(monitorId, code, value);
+}
 } // namespace vcpilot

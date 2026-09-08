@@ -33,6 +33,15 @@ class WindowsDdcBackend final : public IDdcBackend {
     static BOOL CALLBACK monitorEnumProc(HMONITOR monitorHandle, HDC monitorDc, LPRECT monitorRect,
                                          LPARAM data);
 
+    Result<EnumerationContext> enumerateMonitors();
+
+    Result<void> refreshMonitorHandles();
+
+    Result<VcpValue> getVcpInternal(const std::string& monitorId, std::uint8_t code);
+
+    Result<void> setVcpInternal(const std::string& monitorId, std::uint8_t code,
+                                std::uint16_t value);
+
     void clearMonitorHandles();
     void destroyMonitorHandles(std::vector<MonitorHandleEntry>& handles);
 
