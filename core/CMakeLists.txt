@@ -5,6 +5,7 @@ add_library(vcpilot_core
     src/platform/windows/windows_ddc_backend.cpp
     src/monitor_controller.cpp
     src/monitor_capabilities.cpp
+    src/mccs_catalog.cpp
 )
 
 target_compile_features(vcpilot_core

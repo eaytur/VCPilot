@@ -31,6 +31,10 @@ class MonitorController {
 
     Result<std::vector<Monitor>> getMonitors();
 
+    Result<VcpValue> getVcp(const std::string& monitorId, std::uint8_t code);
+
+    Result<void> setVcp(const std::string& monitorId, std::uint8_t code, std::uint16_t value);
+
   private:
     std::unique_ptr<IDdcBackend> m_backend;
     std::unordered_map<std::string, std::optional<MonitorCapabilities>> m_capabilitiesCache;

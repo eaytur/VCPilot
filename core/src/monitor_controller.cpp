@@ -185,4 +185,15 @@ Result<std::vector<Monitor>> MonitorController::getMonitors() {
     return monitors;
 }
 
+Result<VcpValue> MonitorController::getVcp(const std::string& monitorId, std::uint8_t code) {
+
+    return m_backend->getVcp(monitorId, code);
+}
+
+Result<void> MonitorController::setVcp(const std::string& monitorId, std::uint8_t code,
+                                       std::uint16_t value) {
+
+    return m_backend->setVcp(monitorId, code, value);
+}
+
 } // namespace vcpilot
