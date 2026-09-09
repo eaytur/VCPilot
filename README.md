@@ -31,20 +31,26 @@ Currently implemented:
 - Generic MCCS capabilities string parsing
 - Runtime monitor capability model
 - Monitor capability caching and cache lifecycle handling
+- MCCS 2.0 VCP feature metadata catalog
+- VCP feature access and type metadata
+- Metadata for common discrete VCP values
+- Generic VCP read/write API
 - High-level monitor control API
 - Brightness control
 - Input source detection and switching
+- Preservation of unknown and vendor-specific VCP features
 
 Currently in development:
 
-- MCCS VCP feature metadata/catalog
-- Capability-driven monitor controls
+- Core backend testing and stabilization
+- MCCS catalog and capability handling validation
 
 Planned:
 
-- Extended MCCS feature support
+- Extended MCCS feature and value metadata
 - Command-line interface
 - Qt/QML graphical interface
+- Capability-driven monitor controls
 - Monitor profiles and custom modes
 
 ## Architecture
@@ -52,7 +58,10 @@ Planned:
 VCPilot separates high-level monitor control from platform-specific DDC/CI communication.
 
 ```text
-CLI / GUI
+Future User Interfaces
+    |
+    |-- CLI
+    |-- Qt/QML GUI
     |
     v
 MonitorController
@@ -64,7 +73,9 @@ IDdcBackend
 WindowsDdcBackend
 ```
 
-The core application logic remains independent from Windows-specific monitor APIs, allowing additional platform backends to be introduced in the future.
+`MonitorController` exposes both high-level semantic controls and generic VCP access, allowing future interfaces to build controls dynamically from monitor capabilities and MCCS metadata.
+
+Platform-specific DDC/CI communication is isolated behind `IDdcBackend`. Monitor models, MCCS capability parsing, metadata, and higher-level control logic remain independent from Windows-specific monitor APIs.
 
 ## Toolchain
 
@@ -103,14 +114,8 @@ cmake --preset conan-release
 cmake --build --preset conan-release
 ```
 
-### Run
-
-```bat
-.\build\cli\vcpilot_cli.exe
-```
-
 ## Platform
 
 Windows is currently the primary development platform.
 
-Platform-specific monitor communication is isolated behind the backend interface, while monitor models, MCCS capability handling, and higher-level control logic remain in the core.
+Windows monitor communication is implemented through the Windows DDC/CI APIs and isolated behind the backend interface. The architecture allows additional platform backends to be introduced in the future without coupling the core monitor-control model to Windows-specific APIs.
