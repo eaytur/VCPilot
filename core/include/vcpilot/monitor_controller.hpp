@@ -8,6 +8,7 @@
 #include <cstdint>
 #include <memory>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 namespace vcpilot {
@@ -28,8 +29,11 @@ class MonitorController {
 
     Result<MonitorCapabilities> getCapabilities(const std::string& monitorId);
 
+    Result<std::vector<Monitor>> getMonitors();
+
   private:
     std::unique_ptr<IDdcBackend> m_backend;
+    std::unordered_map<std::string, std::optional<MonitorCapabilities>> m_capabilitiesCache;
 };
 
 } // namespace vcpilot

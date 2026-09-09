@@ -1,5 +1,7 @@
 #pragma once
 
+#include "vcpilot/monitor_capabilities.hpp"
+
 #include <cstdint>
 #include <string>
 
@@ -53,5 +55,10 @@ constexpr std::string_view toString(InputSource source) {
 
     return "Unknown";
 }
+
+struct Monitor {
+    MonitorInfo info;
+    std::optional<MonitorCapabilities> capabilities;
+};
 
 } // namespace vcpilot

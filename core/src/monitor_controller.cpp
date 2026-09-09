@@ -1,6 +1,10 @@
 #include "vcpilot/monitor_controller.hpp"
 
+#include "vcpilot/logger.hpp"
+
 #include "platform/windows/windows_ddc_backend.hpp"
+
+#include <algorithm>
 
 namespace vcpilot {
 
@@ -106,6 +110,79 @@ Result<void> MonitorController::setInputSource(const std::string& monitorId, Inp
 
 Result<MonitorCapabilities> MonitorController::getCapabilities(const std::string& monitorId) {
     return m_backend->getCapabilities(monitorId);
+}
+
+Result<std::vector<Monitor>> MonitorController::getMonitors() {
+
+    auto monitorInfos = listMonitors();
+
+    if (!monitorInfos) {
+        return std::unexpected(monitorInfos.error());
+    }
+
+    for (auto it = m_capabilitiesCache.begin(); it != m_capabilitiesCache.end();) {
+
+        const auto monitorExists =
+            std::find_if(monitorInfos->begin(), monitorInfos->end(),
+                         [&it](const MonitorInfo& info) { return info.id == it->first; });
+
+        if (monitorExists != monitorInfos->end()) {
+            ++it;
+        } else {
+            VCPLOG_TRACE("Removing capabilities cache entry for disconnected monitor '{}'",
+                         it->first);
+
+            it = m_capabilitiesCache.erase(it);
+        }
+    }
+
+    std::vector<Monitor> monitors;
+    monitors.reserve(monitorInfos->size());
+
+    for (auto& info : *monitorInfos) {
+
+        auto cached = m_capabilitiesCache.find(info.id);
+
+        if (cached != m_capabilitiesCache.end()) {
+
+            VCPLOG_TRACE("Using cached capabilities for monitor '{}'", info.id);
+
+            monitors.push_back(Monitor{
+                .info = std::move(info),
+                .capabilities = cached->second,
+            });
+
+            continue;
+        }
+
+        auto capabilities = getCapabilities(info.id);
+
+        if (capabilities) {
+
+            VCPLOG_TRACE("Caching capabilities for monitor '{}'", info.id);
+
+            m_capabilitiesCache.emplace(info.id, *capabilities);
+
+            monitors.push_back(Monitor{
+                .info = std::move(info),
+                .capabilities = std::move(*capabilities),
+            });
+
+        } else {
+
+            VCPLOG_DEBUG("Capabilities unavailable for monitor '{}': {}", info.id,
+                         capabilities.error().message);
+
+            m_capabilitiesCache.emplace(info.id, std::nullopt);
+
+            monitors.push_back(Monitor{
+                .info = std::move(info),
+                .capabilities = std::nullopt,
+            });
+        }
+    }
+
+    return monitors;
 }
 
 } // namespace vcpilot
