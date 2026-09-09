@@ -2,6 +2,7 @@
 
 #include "vcpilot/error.hpp"
 #include "vcpilot/logger.hpp"
+#include "vcpilot/monitor_capabilities.hpp"
 
 // clang-format off
 #include <windows.h>
@@ -610,4 +611,129 @@ Result<void> WindowsDdcBackend::setVcp(const std::string& monitorId, std::uint8_
 
     return setVcpInternal(monitorId, code, value);
 }
+
+// -----------------------------------------------------------------------------
+// Internal capabilities read
+//
+// Reads the raw MCCS capabilities string once using the currently cached
+// physical monitor handle and parses it into MonitorCapabilities.
+// No refresh and no retry are performed here.
+// -----------------------------------------------------------------------------
+
+Result<MonitorCapabilities>
+WindowsDdcBackend::getCapabilitiesInternal(const std::string& monitorId) {
+
+    auto it = std::find_if(
+        m_monitorHandles.begin(), m_monitorHandles.end(),
+        [&monitorId](const MonitorHandleEntry& entry) { return entry.id == monitorId; });
+
+    if (it == m_monitorHandles.end()) {
+        VCPLOG_DEBUG("getCapabilities failed: monitor not found");
+
+        return std::unexpected(Error{
+            .code = ErrorCode::MonitorNotFound,
+            .message = "Monitor not found",
+            .nativeCode = std::nullopt,
+        });
+    }
+
+    if (it->physicalMonitors.empty()) {
+        VCPLOG_DEBUG("getCapabilities failed: no physical monitor handles");
+
+        return std::unexpected(Error{
+            .code = ErrorCode::VcpReadFailed,
+            .message = "Monitor has no physical monitor handles",
+            .nativeCode = std::nullopt,
+        });
+    }
+
+    const HANDLE physicalMonitor = it->physicalMonitors[0].hPhysicalMonitor;
+
+    DWORD capabilitiesLength = 0;
+
+    if (!GetCapabilitiesStringLength(physicalMonitor, &capabilitiesLength)) {
+
+        const DWORD error = GetLastError();
+
+        VCPLOG_DEBUG("GetCapabilitiesStringLength failed: nativeError={}", error);
+
+        return std::unexpected(Error{
+            .code = ErrorCode::VcpReadFailed,
+            .message = "Failed to get monitor capabilities string length",
+            .nativeCode = error,
+        });
+    }
+
+    if (capabilitiesLength == 0) {
+        VCPLOG_DEBUG("getCapabilities failed: capabilities string length is zero");
+
+        return std::unexpected(Error{
+            .code = ErrorCode::VcpReadFailed,
+            .message = "Monitor returned an empty capabilities string",
+            .nativeCode = std::nullopt,
+        });
+    }
+
+    std::string capabilities(capabilitiesLength, '\0');
+
+    if (!CapabilitiesRequestAndCapabilitiesReply(physicalMonitor, capabilities.data(),
+                                                 capabilitiesLength)) {
+
+        const DWORD error = GetLastError();
+
+        VCPLOG_DEBUG("CapabilitiesRequestAndCapabilitiesReply failed: nativeError={}", error);
+
+        return std::unexpected(Error{
+            .code = ErrorCode::VcpReadFailed,
+            .message = "Failed to read monitor capabilities",
+            .nativeCode = error,
+        });
+    }
+
+    if (!capabilities.empty() && capabilities.back() == '\0') {
+        capabilities.pop_back();
+    }
+
+    VCPLOG_TRACE("Capabilities string received for monitor '{}': {}", monitorId, capabilities);
+
+    return parseCapabilitiesString(capabilities);
+}
+
+// -----------------------------------------------------------------------------
+// Public capabilities read
+//
+// First try the cached physical monitor handle.
+// If it fails, refresh monitor handles and retry exactly once.
+// -----------------------------------------------------------------------------
+
+Result<MonitorCapabilities> WindowsDdcBackend::getCapabilities(const std::string& monitorId) {
+
+    VCPLOG_TRACE("getCapabilities: monitorId='{}'", monitorId);
+
+    auto result = getCapabilitiesInternal(monitorId);
+
+    if (result) {
+        return result;
+    }
+
+    const Error originalError = result.error();
+
+    VCPLOG_DEBUG("Capabilities read failed for monitor '{}'. "
+                 "Refreshing monitor handles and retrying once.",
+                 monitorId);
+
+    auto refreshResult = refreshMonitorHandles();
+
+    if (!refreshResult) {
+        VCPLOG_DEBUG("Capabilities retry aborted because "
+                     "monitor handle refresh failed");
+
+        return std::unexpected(originalError);
+    }
+
+    VCPLOG_DEBUG("Retrying capabilities read for monitor '{}'", monitorId);
+
+    return getCapabilitiesInternal(monitorId);
+}
+
 } // namespace vcpilot

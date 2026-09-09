@@ -103,4 +103,9 @@ Result<InputSource> MonitorController::getInputSource(const std::string& monitor
 Result<void> MonitorController::setInputSource(const std::string& monitorId, InputSource source) {
     return m_backend->setVcp(monitorId, mccs_vcp_codes::kInputSource, toMccsValue(source));
 }
+
+Result<MonitorCapabilities> MonitorController::getCapabilities(const std::string& monitorId) {
+    return m_backend->getCapabilities(monitorId);
+}
+
 } // namespace vcpilot

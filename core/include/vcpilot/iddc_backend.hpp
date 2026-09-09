@@ -2,6 +2,7 @@
 
 #include "vcpilot/error.hpp"
 #include "vcpilot/monitor.hpp"
+#include "vcpilot/monitor_capabilities.hpp"
 
 #include <cstdint>
 #include <vector>
@@ -18,6 +19,7 @@ class IDdcBackend {
     virtual Result<VcpValue> getVcp(const std::string& monitorId, std::uint8_t code) = 0;
     virtual Result<void> setVcp(const std::string& monitorId, std::uint8_t code,
                                 std::uint16_t value) = 0;
+    virtual Result<MonitorCapabilities> getCapabilities(const std::string& monitorId) = 0;
 };
 
 } // namespace vcpilot

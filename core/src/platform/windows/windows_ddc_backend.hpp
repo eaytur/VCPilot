@@ -2,6 +2,7 @@
 
 #include "vcpilot/error.hpp"
 #include "vcpilot/iddc_backend.hpp"
+#include "vcpilot/monitor_capabilities.hpp"
 
 #include <physicalmonitorenumerationapi.h>
 #include <windows.h>
@@ -17,6 +18,7 @@ class WindowsDdcBackend final : public IDdcBackend {
     Result<VcpValue> getVcp(const std::string& monitorId, std::uint8_t code) override;
     Result<void> setVcp(const std::string& monitorId, std::uint8_t code,
                         std::uint16_t value) override;
+    Result<MonitorCapabilities> getCapabilities(const std::string& monitorId) override;
 
   private:
     struct MonitorHandleEntry {
@@ -41,7 +43,7 @@ class WindowsDdcBackend final : public IDdcBackend {
 
     Result<void> setVcpInternal(const std::string& monitorId, std::uint8_t code,
                                 std::uint16_t value);
-
+    Result<MonitorCapabilities> getCapabilitiesInternal(const std::string& monitorId);
     void clearMonitorHandles();
     void destroyMonitorHandles(std::vector<MonitorHandleEntry>& handles);
 

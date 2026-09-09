@@ -3,6 +3,7 @@
 #include "vcpilot/error.hpp"
 #include "vcpilot/iddc_backend.hpp"
 #include "vcpilot/monitor.hpp"
+#include "vcpilot/monitor_capabilities.hpp"
 
 #include <cstdint>
 #include <memory>
@@ -24,6 +25,8 @@ class MonitorController {
     Result<InputSource> getInputSource(const std::string& monitorId);
 
     Result<void> setInputSource(const std::string& monitorId, InputSource source);
+
+    Result<MonitorCapabilities> getCapabilities(const std::string& monitorId);
 
   private:
     std::unique_ptr<IDdcBackend> m_backend;
