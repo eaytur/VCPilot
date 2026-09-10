@@ -14,6 +14,7 @@
   <img src="https://img.shields.io/badge/CMake-064F8C?logo=cmake&logoColor=white">
   <img src="https://img.shields.io/badge/Conan-6699CB?logo=conan&logoColor=white">
   <img src="https://img.shields.io/badge/MSVC-5C2D91?logo=visualstudio&logoColor=white">
+  <img src="https://img.shields.io/badge/Catch2-2C3E50">
 </p>
 
 ## Current Status
@@ -39,11 +40,14 @@ Currently implemented:
 - Brightness control
 - Input source detection and switching
 - Preservation of unknown and vendor-specific VCP features
+- Catch2-based unit test infrastructure
+- Unit tests for MCCS capability parsing and metadata
+- Unit tests for monitor capability caching and cache lifecycle
+- Unit tests for generic VCP controller delegation
 
 Currently in development:
 
-- Core backend testing and stabilization
-- MCCS catalog and capability handling validation
+- Core backend stabilization and final review
 
 Planned:
 
@@ -77,6 +81,29 @@ WindowsDdcBackend
 
 Platform-specific DDC/CI communication is isolated behind `IDdcBackend`. Monitor models, MCCS capability parsing, metadata, and higher-level control logic remain independent from Windows-specific monitor APIs.
 
+## Testing
+
+VCPilot uses Catch2 for unit testing and CTest for test discovery and execution.
+
+The current test suite covers:
+
+- MCCS capabilities string parsing
+- Discrete VCP value parsing
+- Invalid and malformed capability data
+- Unknown VCP feature preservation
+- MCCS feature metadata lookup
+- MCCS discrete value metadata lookup
+- Monitor capability caching
+- Negative capability caching
+- Cache lifecycle across monitor disconnect and reconnect
+- Generic VCP read/write delegation through `MonitorController`
+
+Run the test suite with:
+
+```bat
+ctest --preset conan-release --output-on-failure
+```
+
 ## Toolchain
 
 - C++23
@@ -85,6 +112,8 @@ Platform-specific DDC/CI communication is isolated behind `IDdcBackend`. Monitor
 - Ninja
 - Conan 2
 - spdlog
+- Catch2 3.15.3
+- CTest
 
 ## Building
 

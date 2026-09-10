@@ -17,6 +17,8 @@ class MonitorController {
   public:
     MonitorController();
 
+    explicit MonitorController(std::unique_ptr<IDdcBackend> backend);
+
     Result<std::vector<MonitorInfo>> listMonitors();
 
     Result<VcpValue> getBrightness(const std::string& monitorId);

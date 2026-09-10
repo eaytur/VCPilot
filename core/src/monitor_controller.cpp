@@ -72,6 +72,9 @@ constexpr std::optional<InputSource> fromMccsValue(std::uint16_t value) {
 
 MonitorController::MonitorController() : m_backend(std::make_unique<WindowsDdcBackend>()) {}
 
+MonitorController::MonitorController(std::unique_ptr<IDdcBackend> backend)
+    : m_backend(std::move(backend)) {}
+
 Result<std::vector<MonitorInfo>> MonitorController::listMonitors() {
     return m_backend->listMonitors();
 }
