@@ -148,3 +148,7 @@ cmake --build --preset conan-release
 Windows is currently the primary development platform.
 
 Windows monitor communication is implemented through the Windows DDC/CI APIs and isolated behind the backend interface. The architecture allows additional platform backends to be introduced in the future without coupling the core monitor-control model to Windows-specific APIs.
+
+## License
+
+VCPilot is licensed under the [MIT License](LICENSE).
