@@ -17,7 +17,7 @@ void ListCommand::configure(CLI::App& app) {
 }
 
 void ListCommand::execute() {
-    const auto monitors = m_controller.getMonitors();
+    const auto monitors = m_controller.getMonitorInfos();
 
     if (!monitors) {
         std::cerr << "Failed to list monitors: " << monitors.error().message << '\n';
@@ -27,20 +27,13 @@ void ListCommand::execute() {
     for (std::size_t i = 0; i < monitors->size(); ++i) {
         const auto& monitor = monitors->at(i);
 
-        std::cout << "[" << i << "] " << monitor.info.manufacturer << " " << monitor.info.model
-                  << '\n';
+        std::cout << "[" << i << "] " << monitor.manufacturer << " " << monitor.model << '\n';
 
-        std::cout << "    Serial: " << monitor.info.serial << '\n';
+        std::cout << "    Serial: " << monitor.serial << '\n';
 
-        std::cout << "    ID: " << monitor.info.id << '\n';
+        std::cout << "    ID: " << monitor.id << '\n';
 
-        std::cout << "    Primary: " << (monitor.info.isPrimary ? "Yes" : "No") << '\n';
-
-        if (monitor.capabilities) {
-            std::cout << "    MCCS: " << monitor.capabilities->mccsVersion << '\n';
-        } else {
-            std::cout << "    Capabilities: unavailable\n";
-        }
+        std::cout << "    Primary: " << (monitor.isPrimary ? "Yes" : "No") << '\n';
 
         std::cout << '\n';
     }

@@ -11,7 +11,7 @@ namespace {
 
 class FakeDdcBackend final : public vcpilot::IDdcBackend {
   public:
-    vcpilot::Result<std::vector<vcpilot::MonitorInfo>> listMonitors() override {
+    vcpilot::Result<std::vector<vcpilot::MonitorInfo>> getMonitorInfos() override {
         return monitors;
     }
 

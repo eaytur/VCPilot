@@ -22,7 +22,7 @@ void BrightnessCommand::configure(CLI::App& app) {
 }
 
 void BrightnessCommand::execute() {
-    const auto monitors = m_controller.getMonitors();
+    const auto monitors = m_controller.getMonitorInfos();
 
     if (!monitors) {
         std::cerr << "Failed to list monitors: " << monitors.error().message << '\n';
@@ -37,7 +37,7 @@ void BrightnessCommand::execute() {
     const auto& monitor = monitors->at(m_monitorIndex);
 
     if (m_value.has_value()) {
-        const auto result = m_controller.setBrightness(monitor.info.id, *m_value);
+        const auto result = m_controller.setBrightness(monitor.id, *m_value);
 
         if (!result) {
             std::cerr << "Failed to set brightness: " << result.error().message << '\n';
@@ -46,7 +46,7 @@ void BrightnessCommand::execute() {
         return;
     }
 
-    const auto result = m_controller.getBrightness(monitor.info.id);
+    const auto result = m_controller.getBrightness(monitor.id);
 
     if (!result) {
         std::cerr << "Failed to get brightness: " << result.error().message << '\n';

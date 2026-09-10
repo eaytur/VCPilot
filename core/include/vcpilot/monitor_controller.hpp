@@ -19,7 +19,7 @@ class MonitorController {
 
     explicit MonitorController(std::unique_ptr<IDdcBackend> backend);
 
-    Result<std::vector<MonitorInfo>> listMonitors();
+    Result<std::vector<MonitorInfo>> getMonitorInfos();
 
     Result<MonitorCapabilities> getCapabilities(const std::string& monitorId);
 

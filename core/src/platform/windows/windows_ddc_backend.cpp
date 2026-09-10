@@ -352,7 +352,7 @@ Result<WindowsDdcBackend::EnumerationContext> WindowsDdcBackend::enumerateMonito
     return context;
 }
 
-Result<std::vector<MonitorInfo>> WindowsDdcBackend::listMonitors() {
+Result<std::vector<MonitorInfo>> WindowsDdcBackend::getMonitorInfos() {
     auto enumerationResult = enumerateMonitors();
 
     if (!enumerationResult) {

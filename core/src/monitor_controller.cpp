@@ -207,8 +207,8 @@ MonitorController::MonitorController() : m_backend(std::make_unique<WindowsDdcBa
 MonitorController::MonitorController(std::unique_ptr<IDdcBackend> backend)
     : m_backend(std::move(backend)) {}
 
-Result<std::vector<MonitorInfo>> MonitorController::listMonitors() {
-    return m_backend->listMonitors();
+Result<std::vector<MonitorInfo>> MonitorController::getMonitorInfos() {
+    return m_backend->getMonitorInfos();
 }
 
 Result<MonitorCapabilities> MonitorController::getCapabilities(const std::string& monitorId) {
@@ -217,7 +217,7 @@ Result<MonitorCapabilities> MonitorController::getCapabilities(const std::string
 
 Result<std::vector<Monitor>> MonitorController::getMonitors() {
 
-    auto monitorInfos = listMonitors();
+    auto monitorInfos = getMonitorInfos();
 
     if (!monitorInfos) {
         return std::unexpected(monitorInfos.error());

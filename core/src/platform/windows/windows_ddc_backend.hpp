@@ -13,7 +13,7 @@ class WindowsDdcBackend final : public IDdcBackend {
   public:
     ~WindowsDdcBackend() override;
 
-    Result<std::vector<MonitorInfo>> listMonitors() override;
+    Result<std::vector<MonitorInfo>> getMonitorInfos() override;
 
     Result<VcpValue> getVcp(const std::string& monitorId, std::uint8_t code) override;
     Result<void> setVcp(const std::string& monitorId, std::uint8_t code,
