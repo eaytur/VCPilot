@@ -62,4 +62,22 @@ struct Monitor {
     std::optional<MonitorCapabilities> capabilities;
 };
 
+enum class PowerMode { On, Standby, Suspend, Off };
+
+enum class ColorPreset {
+    SRgb,
+    DisplayNative,
+    K4000,
+    K5000,
+    K6500,
+    K7500,
+    K8200,
+    K9300,
+    K10000,
+    K11500,
+    User1,
+    User2,
+    User3
+};
+
 } // namespace vcpilot
