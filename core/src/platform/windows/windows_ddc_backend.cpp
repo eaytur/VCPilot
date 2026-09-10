@@ -13,10 +13,12 @@
 #include <lowlevelmonitorconfigurationapi.h>
 
 #include <algorithm>
+#include <cstdint>
 #include <iomanip>
 #include <optional>
 #include <sstream>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace vcpilot {
@@ -300,30 +302,29 @@ BOOL CALLBACK WindowsDdcBackend::monitorEnumProc(HMONITOR monitorHandle, HDC, LP
         parseEdidInto(*edid, info);
     }
 
+    auto* context = reinterpret_cast<EnumerationContext*>(data);
+
+    MonitorHandleEntry handleEntry;
+    handleEntry.id = info.id;
+
     DWORD physicalMonitorCount = 0;
 
     if (!GetNumberOfPhysicalMonitorsFromHMONITOR(monitorHandle, &physicalMonitorCount)) {
         VCPLOG_WARN("GetNumberOfPhysicalMonitorsFromHMONITOR failed, native error={}",
                     GetLastError());
 
-        return TRUE;
+    } else if (physicalMonitorCount > 0) {
+
+        std::vector<PHYSICAL_MONITOR> physicalMonitors(physicalMonitorCount);
+
+        if (!GetPhysicalMonitorsFromHMONITOR(monitorHandle, physicalMonitorCount,
+                                             physicalMonitors.data())) {
+            VCPLOG_WARN("GetPhysicalMonitorsFromHMONITOR failed, native error={}", GetLastError());
+
+        } else {
+            handleEntry.physicalMonitors = std::move(physicalMonitors);
+        }
     }
-
-    std::vector<PHYSICAL_MONITOR> physicalMonitors(physicalMonitorCount);
-
-    if (!GetPhysicalMonitorsFromHMONITOR(monitorHandle, physicalMonitorCount,
-                                         physicalMonitors.data())) {
-        VCPLOG_WARN("GetPhysicalMonitorsFromHMONITOR failed, native error={}", GetLastError());
-
-        return TRUE;
-    }
-
-    MonitorHandleEntry handleEntry;
-    handleEntry.id = info.id;
-    handleEntry.logicalHandle = monitorHandle;
-    handleEntry.physicalMonitors = std::move(physicalMonitors);
-
-    auto* context = reinterpret_cast<EnumerationContext*>(data);
 
     context->handles.push_back(std::move(handleEntry));
     context->monitors.push_back(std::move(info));

@@ -31,10 +31,9 @@ struct VcpValueDescriptor {
 };
 
 const VcpFeatureDescriptor* findVcpFeatureDescriptor(std::uint8_t code);
+const VcpValueDescriptor* findVcpValueDescriptor(std::uint8_t code, std::uint16_t value);
 
 std::string_view toString(VcpAccess access);
 std::string_view toString(VcpFeatureType type);
-
-const VcpValueDescriptor* findVcpValueDescriptor(std::uint8_t code, std::uint16_t value);
 
 } // namespace vcpilot

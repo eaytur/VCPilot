@@ -80,15 +80,15 @@ Result<std::vector<MonitorInfo>> MonitorController::listMonitors() {
 }
 
 Result<VcpValue> MonitorController::getBrightness(const std::string& monitorId) {
-    return m_backend->getVcp(monitorId, mccs_vcp_codes::kBrightness);
+    return getVcp(monitorId, mccs_vcp_codes::kBrightness);
 }
 
 Result<void> MonitorController::setBrightness(const std::string& monitorId, std::uint16_t value) {
-    return m_backend->setVcp(monitorId, mccs_vcp_codes::kBrightness, value);
+    return setVcp(monitorId, mccs_vcp_codes::kBrightness, value);
 }
 
 Result<InputSource> MonitorController::getInputSource(const std::string& monitorId) {
-    auto result = m_backend->getVcp(monitorId, mccs_vcp_codes::kInputSource);
+    auto result = getVcp(monitorId, mccs_vcp_codes::kInputSource);
 
     if (!result) {
         return std::unexpected(result.error());
@@ -108,7 +108,7 @@ Result<InputSource> MonitorController::getInputSource(const std::string& monitor
 }
 
 Result<void> MonitorController::setInputSource(const std::string& monitorId, InputSource source) {
-    return m_backend->setVcp(monitorId, mccs_vcp_codes::kInputSource, toMccsValue(source));
+    return setVcp(monitorId, mccs_vcp_codes::kInputSource, toMccsValue(source));
 }
 
 Result<MonitorCapabilities> MonitorController::getCapabilities(const std::string& monitorId) {

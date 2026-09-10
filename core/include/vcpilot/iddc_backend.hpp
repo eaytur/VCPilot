@@ -5,6 +5,7 @@
 #include "vcpilot/monitor_capabilities.hpp"
 
 #include <cstdint>
+#include <string>
 #include <vector>
 
 namespace vcpilot {

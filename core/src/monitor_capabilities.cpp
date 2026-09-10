@@ -4,6 +4,7 @@
 #include <charconv>
 #include <optional>
 #include <string_view>
+#include <utility>
 
 namespace vcpilot {
 
@@ -112,9 +113,31 @@ MonitorCapabilities parseCapabilitiesString(const std::string& capabilities) {
         const auto parsedCode = parseHexValue(codeToken);
 
         if (!parsedCode || *parsedCode > 0xFF) {
+
+            while (pos < vcpSection->size() &&
+                   std::isspace(static_cast<unsigned char>((*vcpSection)[pos]))) {
+                ++pos;
+            }
+
+            if (pos < vcpSection->size() && (*vcpSection)[pos] == '(') {
+
+                int depth = 1;
+                ++pos;
+
+                while (pos < vcpSection->size() && depth > 0) {
+
+                    if ((*vcpSection)[pos] == '(') {
+                        ++depth;
+                    } else if ((*vcpSection)[pos] == ')') {
+                        --depth;
+                    }
+
+                    ++pos;
+                }
+            }
+
             continue;
         }
-
         VcpCapability capability{
             .code = static_cast<std::uint8_t>(*parsedCode),
             .values = {},

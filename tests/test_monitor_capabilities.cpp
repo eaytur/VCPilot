@@ -94,3 +94,12 @@ TEST_CASE("Capabilities parser ignores VCP codes outside byte range") {
     REQUIRE(capabilities.vcpFeatures[0].code == 0x10);
     REQUIRE(capabilities.vcpFeatures[1].code == 0x60);
 }
+
+TEST_CASE("Out-of-range VCP code does not expose nested values as features") {
+
+    const auto result = vcpilot::parseCapabilitiesString("(vcp(100(01 02) 10 12))");
+
+    REQUIRE(result.vcpFeatures.size() == 2);
+    CHECK(result.vcpFeatures[0].code == 0x10);
+    CHECK(result.vcpFeatures[1].code == 0x12);
+}

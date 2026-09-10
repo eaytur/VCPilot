@@ -3,16 +3,17 @@
 #include "vcpilot/monitor_capabilities.hpp"
 
 #include <cstdint>
+#include <optional>
 #include <string>
+#include <string_view>
 
 namespace vcpilot {
 
 struct MonitorBounds {
-
-    std::int32_t x;
-    std::int32_t y;
-    std::int32_t width;
-    std::int32_t height;
+    std::int32_t x{};
+    std::int32_t y{};
+    std::int32_t width{};
+    std::int32_t height{};
 };
 
 struct MonitorInfo {
@@ -21,14 +22,14 @@ struct MonitorInfo {
     std::string model;
     std::string serial;
 
-    bool isPrimary;
+    bool isPrimary{false};
 
-    MonitorBounds bounds;
+    MonitorBounds bounds{};
 };
 
 struct VcpValue {
-    std::uint16_t current;
-    std::uint16_t maximum;
+    std::uint16_t current{};
+    std::uint16_t maximum{};
 };
 
 enum class InputSource { Vga1, Vga2, Dvi1, Dvi2, DisplayPort1, DisplayPort2, Hdmi1, Hdmi2 };

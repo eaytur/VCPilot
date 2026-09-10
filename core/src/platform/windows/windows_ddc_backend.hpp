@@ -23,7 +23,6 @@ class WindowsDdcBackend final : public IDdcBackend {
   private:
     struct MonitorHandleEntry {
         std::string id;
-        HMONITOR logicalHandle;
         std::vector<PHYSICAL_MONITOR> physicalMonitors;
     };
 
