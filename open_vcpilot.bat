@@ -44,6 +44,14 @@ if errorlevel 1 (
 )
 
 REM ------------------------------------------------------------
+REM Qt environment
+REM ------------------------------------------------------------
+
+set "QT_DIR=C:\Qt\6.11.2\msvc2022_64"
+set "PATH=%QT_DIR%\bin;%PATH%"
+set "CMAKE_PREFIX_PATH=%QT_DIR%"
+
+REM ------------------------------------------------------------
 REM Verify development tools
 REM ------------------------------------------------------------
 
@@ -70,6 +78,11 @@ echo.
 
 echo Conan:
 where conan
+echo.
+
+echo Qt:
+echo   %QT_DIR%
+where qmake
 echo.
 
 echo VS Code:
