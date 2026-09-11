@@ -26,6 +26,7 @@ qt_add_qml_module(vcpilot_gui
         qml/theme/Theme.qml
         qml/components/SectionCard.qml
         qml/components/ControlSlider.qml
+        qml/components/SegmentedControl.qml
 )
 
 target_link_libraries(vcpilot_gui

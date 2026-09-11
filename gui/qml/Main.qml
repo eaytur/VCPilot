@@ -16,28 +16,19 @@ ApplicationWindow {
     SectionCard {
         anchors.centerIn: parent
 
-        width: 380
-        title: "Picture"
+        width: 420
+        title: "Input Source"
 
-        ControlSlider {
+        SegmentedControl {
             Layout.fillWidth: true
 
-            label: "Brightness"
-            value: 72
-        }
-
-        ControlSlider {
-            Layout.fillWidth: true
-
-            label: "Contrast"
-            value: 65
-        }
-
-        ControlSlider {
-            Layout.fillWidth: true
-
-            label: "Sharpness"
-            value: 50
+            options: [
+                "DisplayPort 1",
+                "HDMI 1",
+                "HDMI 1",
+                "HDMI 1",
+                "HDMI 1"
+            ]
         }
     }
 }
