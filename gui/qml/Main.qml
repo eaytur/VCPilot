@@ -1,26 +1,50 @@
 import QtQuick
 import QtQuick.Controls
 
+import VCPilot
+
 ApplicationWindow {
     width: 1200
     height: 760
 
     visible: true
-
     title: "VCPilot"
 
+    color: Theme.background
+
     Rectangle {
-        anchors.fill: parent
-        color: "#111318"
+        anchors.centerIn: parent
 
-        Text {
+        width: 320
+        height: 160
+
+        radius: Theme.radiusLarge
+        color: Theme.surface
+        border.color: Theme.border
+        border.width: 1
+
+        Column {
             anchors.centerIn: parent
+            spacing: Theme.spacingSm
 
-            text: "VCPilot"
-            color: "white"
+            Text {
+                anchors.horizontalCenter: parent.horizontalCenter
 
-            font.pixelSize: 42
-            font.bold: true
+                text: "VCPilot"
+                color: Theme.textPrimary
+
+                font.pixelSize: Theme.fontDisplay
+                font.weight: Theme.fontWeightBold
+            }
+
+            Text {
+                anchors.horizontalCenter: parent.horizontalCenter
+
+                text: "Control your displays."
+                color: Theme.textSecondary
+
+                font.pixelSize: Theme.fontSm
+            }
         }
     }
 }

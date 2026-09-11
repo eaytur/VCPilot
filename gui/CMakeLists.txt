@@ -9,12 +9,21 @@ qt_add_executable(vcpilot_gui
     src/main.cpp
 )
 
+
+set_source_files_properties(
+    qml/theme/Theme.qml
+    PROPERTIES
+        QT_QML_SINGLETON_TYPE TRUE
+)
+
+
 qt_add_qml_module(vcpilot_gui
     URI VCPilot
     VERSION 1.0
 
     QML_FILES
         qml/Main.qml
+        qml/theme/Theme.qml
 )
 
 target_link_libraries(vcpilot_gui
