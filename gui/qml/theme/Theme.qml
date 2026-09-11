@@ -57,4 +57,9 @@ QtObject {
     readonly property int animationFast: 120
     readonly property int animationNormal: 180
     readonly property int animationSlow: 260
+
+    // Controls
+    readonly property color controlHandle: "#F4F8FC"
+    readonly property color controlHandlePressed: "#A8B6C6"
+    readonly property color controlTrack:  "#15202B"
 }

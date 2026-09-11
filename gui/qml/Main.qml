@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Controls
+import QtQuick.Layouts
 
 import VCPilot
 
@@ -18,22 +19,25 @@ ApplicationWindow {
         width: 380
         title: "Picture"
 
-        Text {
-            text: "Brightness"
-            color: Theme.textSecondary
-            font.pixelSize: Theme.fontMd
+        ControlSlider {
+            Layout.fillWidth: true
+
+            label: "Brightness"
+            value: 72
         }
 
-        Text {
-            text: "Contrast"
-            color: Theme.textSecondary
-            font.pixelSize: Theme.fontMd
+        ControlSlider {
+            Layout.fillWidth: true
+
+            label: "Contrast"
+            value: 65
         }
 
-        Text {
-            text: "Sharpness"
-            color: Theme.textSecondary
-            font.pixelSize: Theme.fontMd
+        ControlSlider {
+            Layout.fillWidth: true
+
+            label: "Sharpness"
+            value: 50
         }
     }
 }
