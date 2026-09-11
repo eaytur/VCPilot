@@ -24,6 +24,7 @@ qt_add_qml_module(vcpilot_gui
     QML_FILES
         qml/Main.qml
         qml/theme/Theme.qml
+        qml/components/SectionCard.qml
 )
 
 target_link_libraries(vcpilot_gui

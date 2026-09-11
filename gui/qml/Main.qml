@@ -12,39 +12,28 @@ ApplicationWindow {
 
     color: Theme.background
 
-    Rectangle {
+    SectionCard {
         anchors.centerIn: parent
 
-        width: 320
-        height: 160
+        width: 380
+        title: "Picture"
 
-        radius: Theme.radiusLarge
-        color: Theme.surface
-        border.color: Theme.border
-        border.width: 1
+        Text {
+            text: "Brightness"
+            color: Theme.textSecondary
+            font.pixelSize: Theme.fontMd
+        }
 
-        Column {
-            anchors.centerIn: parent
-            spacing: Theme.spacingSm
+        Text {
+            text: "Contrast"
+            color: Theme.textSecondary
+            font.pixelSize: Theme.fontMd
+        }
 
-            Text {
-                anchors.horizontalCenter: parent.horizontalCenter
-
-                text: "VCPilot"
-                color: Theme.textPrimary
-
-                font.pixelSize: Theme.fontDisplay
-                font.weight: Theme.fontWeightBold
-            }
-
-            Text {
-                anchors.horizontalCenter: parent.horizontalCenter
-
-                text: "Control your displays."
-                color: Theme.textSecondary
-
-                font.pixelSize: Theme.fontSm
-            }
+        Text {
+            text: "Sharpness"
+            color: Theme.textSecondary
+            font.pixelSize: Theme.fontMd
         }
     }
 }
