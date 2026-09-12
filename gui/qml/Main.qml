@@ -20,10 +20,24 @@ ApplicationWindow {
         anchors.centerIn: parent
         spacing: Theme.spacingLg
 
-        IconButton {
-            iconSource: "qrc:/qt/qml/VCPilot/assets/icons/settings.svg"
+        Row {
+            spacing: Theme.spacingMd
 
-            onClicked: console.log("Settings clicked")
+            AppButton {
+                text: "Settings"
+
+                iconSource:
+                    "qrc:/qt/qml/VCPilot/assets/icons/settings.svg";
+
+                onClicked: console.log("Settings")
+            }
+
+            AppButton {
+                text: "Apply"
+                primary: true
+
+                onClicked: console.log("Apply")
+            }
         }
     }
 }
