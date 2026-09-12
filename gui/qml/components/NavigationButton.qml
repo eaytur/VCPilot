@@ -7,40 +7,52 @@ import VCPilot
 Button {
     id: root
 
+    enum IndicatorStyle {
+        Outline,
+        Underline
+    }
+
     property url iconSource
     property int iconSize: 18
     property bool active: false
+    property int indicatorStyle: NavigationButton.Outline
 
     implicitHeight: 40
     implicitWidth: contentRow.implicitWidth + Theme.spacingLg * 2
 
     hoverEnabled: true
 
-    background: Rectangle {
-        radius: Theme.radiusSmall
+    background: Item {
+        Rectangle {
+            anchors.fill: parent
 
-        color: {
-            if (root.down)
-                return Qt.darker(
-                    root.active
-                        ? Theme.surfaceRaised
-                        : Theme.surfaceRaised,
-                    1.15
-                )
+            radius: Theme.radiusSmall
+            color: root.hovered
+                   ? Theme.surfaceRaised
+                   : "transparent"
 
-            if (root.active)
-                return Theme.surfaceRaised
+            border.width: root.active
+                          && root.indicatorStyle === NavigationButton.Outline
+                          ? 1 : 0
 
-            if (root.hovered)
-                return Theme.surfaceRaised
-
-            return "transparent"
+            border.color: Theme.primary
         }
 
-        border.width: root.active ? 1 : 0
-        border.color: root.active
-                      ? Theme.primary
-                      : "transparent"
+        Rectangle {
+            anchors {
+                left: parent.left
+                right: parent.right
+                bottom: parent.bottom
+            }
+
+            height: 2
+            radius: 1
+
+            color: Theme.primary
+
+            visible: root.active
+                     && root.indicatorStyle === NavigationButton.Underline
+        }
     }
 
     contentItem: Item {
