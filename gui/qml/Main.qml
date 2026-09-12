@@ -21,22 +21,22 @@ ApplicationWindow {
         spacing: Theme.spacingLg
 
         Row {
-            spacing: Theme.spacingMd
+            spacing: Theme.spacingSm
 
-            AppButton {
-                text: "Settings"
-
-                iconSource:
-                    "qrc:/qt/qml/VCPilot/assets/icons/settings.svg";
-
-                onClicked: console.log("Settings")
+            NavigationButton {
+                text: "Dashboard"
+                iconSource: "qrc:/qt/qml/VCPilot/assets/icons/layout-dashboard.svg"
+                active: true
             }
 
-            AppButton {
-                text: "Apply"
-                primary: true
+            NavigationButton {
+                text: "Profiles"
+                iconSource: "qrc:/qt/qml/VCPilot/assets/icons/sliders-horizontal.svg"
+            }
 
-                onClicked: console.log("Apply")
+            NavigationButton {
+                text: "Settings"
+                iconSource: "qrc:/qt/qml/VCPilot/assets/icons/settings.svg"
             }
         }
     }
