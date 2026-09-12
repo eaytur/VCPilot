@@ -20,24 +20,23 @@ ApplicationWindow {
         anchors.centerIn: parent
         spacing: Theme.spacingLg
 
-        Row {
-            spacing: Theme.spacingSm
+        NavigationBar {
+            indicatorStyle: NavigationButton.Underline
 
-            NavigationButton {
-                text: "Dashboard"
-                iconSource: "qrc:/qt/qml/VCPilot/assets/icons/layout-dashboard.svg"
-                active: true
-            }
-
-            NavigationButton {
-                text: "Profiles"
-                iconSource: "qrc:/qt/qml/VCPilot/assets/icons/sliders-horizontal.svg"
-            }
-
-            NavigationButton {
-                text: "Settings"
-                iconSource: "qrc:/qt/qml/VCPilot/assets/icons/settings.svg"
-            }
+            items: [
+                {
+                    text: "Dashboard",
+                    icon: "qrc:/qt/qml/VCPilot/assets/icons/layout-dashboard.svg"
+                },
+                {
+                    text: "Profiles",
+                    icon: "qrc:/qt/qml/VCPilot/assets/icons/sliders-horizontal.svg"
+                },
+                {
+                    text: "Settings",
+                    icon: "qrc:/qt/qml/VCPilot/assets/icons/settings.svg"
+                }
+            ]
         }
     }
 }

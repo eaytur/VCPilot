@@ -32,6 +32,7 @@ qt_add_qml_module(vcpilot_gui
         qml/components/IconButton.qml
         qml/components/AppButton.qml
         qml/components/NavigationButton.qml
+        qml/components/NavigationBar.qml
 
     RESOURCES
         assets/icons/layout-dashboard.svg
