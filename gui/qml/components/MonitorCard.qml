@@ -13,20 +13,21 @@ Rectangle {
     property string resolution: ""
     property bool primaryMonitor: false
     property bool selected: false
+    property bool internalDisplay: false
     property int monitorIndex: 0
 
     signal clicked()
 
-    implicitWidth: 280
+    implicitWidth: 320
     implicitHeight: 140
 
     radius: Theme.radiusLarge
-    color: selected
+    color: root.selected
            ? Theme.surfaceRaised
            : Theme.surface
 
     border.width: 1
-    border.color: selected
+    border.color: root.selected
                   ? Theme.primary
                   : Theme.border
 
@@ -37,74 +38,122 @@ Rectangle {
         onClicked: root.clicked()
     }
 
-    ColumnLayout {
+    RowLayout {
         anchors {
-            top: parent.top
-            left: parent.left
-            right: parent.right
-
-            topMargin: Theme.spacingLg
-            leftMargin: Theme.spacingLg
-            rightMargin: Theme.spacingLg
+            fill: parent
+            margins: Theme.spacingLg
         }
 
-        spacing: Theme.spacingSm
+        spacing: Theme.spacingLg
 
-        RowLayout {
+        Rectangle {
+            Layout.preferredWidth: 72
+            Layout.preferredHeight: 72
+            Layout.alignment: Qt.AlignVCenter
+
+            radius: Theme.radiusMedium
+
+            color: root.selected
+                   ? Qt.rgba(
+                         Theme.primary.r,
+                         Theme.primary.g,
+                         Theme.primary.b,
+                         0.10
+                     )
+                   : Theme.surfaceRaised
+
+            border.width: 1
+
+            border.color: root.selected
+                          ? Theme.primary
+                          : Theme.border
+
+            AppIcon {
+                anchors.centerIn: parent
+
+                iconSize: 34
+
+                source: root.internalDisplay
+                    ? "qrc:/qt/qml/VCPilot/assets/icons/laptop.svg"
+                    : "qrc:/qt/qml/VCPilot/assets/icons/monitor.svg"
+
+                iconColor: root.selected
+                           ? Theme.primary
+                           : Theme.textSecondary
+            }
+        }
+
+        ColumnLayout {
             Layout.fillWidth: true
+            Layout.alignment: Qt.AlignVCenter
 
-            Text {
+            spacing: 3
+
+            RowLayout {
                 Layout.fillWidth: true
 
-                text: root.monitorName
-                color: Theme.textPrimary
+                spacing: Theme.spacingSm
 
-                font.pixelSize: Theme.fontLg
-                font.weight: Theme.fontWeightBold
+                Text {
+                    Layout.fillWidth: true
 
+                    text: root.monitorName
+                    color: Theme.textPrimary
+
+                    font.pixelSize: Theme.fontMd
+                    font.weight: Theme.fontWeightBold
+
+                    elide: Text.ElideRight
+                }
+
+                Rectangle {
+                    implicitWidth: 28
+                    implicitHeight: 28
+
+                    radius: Theme.radiusSmall
+
+                    color: root.selected
+                           ? Theme.primary
+                           : Theme.surfaceRaised
+
+                    border.width: 1
+                    border.color: root.selected
+                                  ? Theme.primary
+                                  : Theme.border
+
+                    Text {
+                        anchors.centerIn: parent
+
+                        text: root.monitorIndex + 1
+
+                        color: root.selected
+                               ? Theme.textPrimary
+                               : Theme.textSecondary
+
+                        font.pixelSize: Theme.fontSm
+                        font.weight: Theme.fontWeightMedium
+                    }
+                }
+            }
+
+            Text {
+                text: root.modelName
+                color: Theme.textSecondary
+                font.pixelSize: Theme.fontXs
+            }
+
+            Text {
+                text: root.resolution + " · " + root.connection
+                color: Theme.textMuted
+                font.pixelSize: Theme.fontXs
                 elide: Text.ElideRight
             }
 
-            Rectangle {
-                implicitWidth: 28
-                implicitHeight: 28
+            Item {
+                visible: root.primaryMonitor
 
-                radius: Theme.radiusSmall
-
-                color: root.selected
-                       ? Theme.primary
-                       : Theme.surfaceRaised
-
-                border.width: 1
-                border.color: root.selected
-                              ? Theme.primary
-                              : Theme.border
-
-                Text {
-                    anchors.centerIn: parent
-
-                    text: root.monitorIndex + 1
-
-                    color: root.selected
-                           ? Theme.textPrimary
-                           : Theme.textSecondary
-
-                    font.pixelSize: Theme.fontSm
-                    font.weight: Theme.fontWeightMedium
-                }
+                implicitHeight: 24
             }
-        }
-
-        Text {
-            text: root.modelName
-            color: Theme.textSecondary
-            font.pixelSize: Theme.fontSm
-        }
-
-        Text {
-            text: root.resolution + " · " + root.connection
-            color: Theme.textMuted
-            font.pixelSize: Theme.fontSm
         }
     }
 
@@ -121,10 +170,10 @@ Rectangle {
 
         implicitWidth: primaryText.implicitWidth
                        + Theme.spacingMd * 2
-        implicitHeight: 26
+        implicitHeight: 24
 
         radius: Theme.radiusSmall
-        color: Theme.surfaceRaised
+        color: "transparent"
 
         border.width: 1
         border.color: Theme.primary

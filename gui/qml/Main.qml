@@ -7,36 +7,50 @@ import VCPilot
 ApplicationWindow {
     id: window
 
-    width: 1200
-    height: 760
+    width: 1400
+    height: 900
+
+    minimumWidth: 1000
+    minimumHeight: 650
+
     visible: true
-    title: "VCPilot"
 
     color: Theme.background
 
-    property int selectedMonitor: 0
+    property int currentPage: 0
 
-    RowLayout {
-        anchors.centerIn: parent
-        spacing: Theme.spacingLg
 
-        NavigationBar {
-            indicatorStyle: NavigationButton.Underline
+    ColumnLayout {
+        anchors.fill: parent
+        spacing: 0
 
-            items: [
+        AppHeader {
+            Layout.fillWidth: true
+            Layout.preferredHeight: 72
+
+            currentIndex: window.currentPage
+
+            navigationItems: [
                 {
                     text: "Dashboard",
                     icon: "qrc:/qt/qml/VCPilot/assets/icons/layout-dashboard.svg"
-                },
-                {
-                    text: "Profiles",
-                    icon: "qrc:/qt/qml/VCPilot/assets/icons/sliders-horizontal.svg"
-                },
-                {
-                    text: "Settings",
-                    icon: "qrc:/qt/qml/VCPilot/assets/icons/settings.svg"
                 }
             ]
+
+            onNavigationRequested: function(index) {
+                window.currentPage = index
+            }
+        }
+
+        StackLayout {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+
+            currentIndex: window.currentPage
+
+
+            DashboardPage {
+            }
         }
     }
 }

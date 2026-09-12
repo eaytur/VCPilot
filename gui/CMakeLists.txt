@@ -33,17 +33,16 @@ qt_add_qml_module(vcpilot_gui
         qml/components/AppButton.qml
         qml/components/NavigationButton.qml
         qml/components/NavigationBar.qml
+        qml/components/AppHeader.qml
+        qml/components/AppSwitch.qml
+        qml/pages/DashboardPage.qml
 
     RESOURCES
         assets/icons/layout-dashboard.svg
         assets/icons/monitor.svg
-        assets/icons/palette.svg
-        assets/icons/power.svg
-        assets/icons/refresh-cw.svg
-        assets/icons/settings.svg
-        assets/icons/sliders-horizontal.svg
         assets/icons/sun.svg
-        assets/icons/volume-2.svg
+        assets/icons/moon.svg
+        assets/icons/laptop.svg
 )
 
 target_link_libraries(vcpilot_gui
