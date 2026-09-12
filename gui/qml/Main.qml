@@ -20,10 +20,10 @@ ApplicationWindow {
         anchors.centerIn: parent
         spacing: Theme.spacingLg
 
-        AppIcon {
-            source: "qrc:/qt/qml/VCPilot/assets/icons/settings.svg"
-            iconSize: 24
-            iconColor: Theme.primary
+        IconButton {
+            iconSource: "qrc:/qt/qml/VCPilot/assets/icons/settings.svg"
+
+            onClicked: console.log("Settings clicked")
         }
     }
 }

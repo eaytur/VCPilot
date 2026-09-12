@@ -29,6 +29,7 @@ qt_add_qml_module(vcpilot_gui
         qml/components/SegmentedControl.qml
         qml/components/MonitorCard.qml
         qml/components/AppIcon.qml
+        qml/components/IconButton.qml
     
     RESOURCES
         assets/icons/layout-dashboard.svg
