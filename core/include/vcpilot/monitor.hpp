@@ -23,6 +23,7 @@ struct MonitorInfo {
     std::string serial;
 
     bool isPrimary{false};
+    bool isInternalDisplay{false};
 
     MonitorBounds bounds{};
 };

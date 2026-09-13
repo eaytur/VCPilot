@@ -18,6 +18,7 @@
 #include <optional>
 #include <sstream>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -260,6 +261,62 @@ std::string WideToUtf8(const wchar_t* wide) {
 
     return result;
 }
+
+bool isInternalOutputTechnology(DISPLAYCONFIG_VIDEO_OUTPUT_TECHNOLOGY technology) {
+    switch (technology) {
+    case DISPLAYCONFIG_OUTPUT_TECHNOLOGY_INTERNAL:
+    case DISPLAYCONFIG_OUTPUT_TECHNOLOGY_LVDS:
+    case DISPLAYCONFIG_OUTPUT_TECHNOLOGY_DISPLAYPORT_EMBEDDED:
+    case DISPLAYCONFIG_OUTPUT_TECHNOLOGY_UDI_EMBEDDED:
+        return true;
+
+    default:
+        return false;
+    }
+}
+
+bool isInternalDisplay(const wchar_t* gdiDeviceName) {
+    UINT32 pathCount = 0;
+    UINT32 modeCount = 0;
+
+    if (GetDisplayConfigBufferSizes(QDC_ONLY_ACTIVE_PATHS, &pathCount, &modeCount) !=
+        ERROR_SUCCESS) {
+        return false;
+    }
+
+    std::vector<DISPLAYCONFIG_PATH_INFO> paths(pathCount);
+    std::vector<DISPLAYCONFIG_MODE_INFO> modes(modeCount);
+
+    if (QueryDisplayConfig(QDC_ONLY_ACTIVE_PATHS, &pathCount, paths.data(), &modeCount,
+                           modes.data(), nullptr) != ERROR_SUCCESS) {
+        return false;
+    }
+
+    for (const auto& path : paths) {
+        DISPLAYCONFIG_SOURCE_DEVICE_NAME sourceName{};
+
+        sourceName.header.type = DISPLAYCONFIG_DEVICE_INFO_GET_SOURCE_NAME;
+
+        sourceName.header.size = sizeof(sourceName);
+
+        sourceName.header.adapterId = path.sourceInfo.adapterId;
+
+        sourceName.header.id = path.sourceInfo.id;
+
+        if (DisplayConfigGetDeviceInfo(&sourceName.header) != ERROR_SUCCESS) {
+            continue;
+        }
+
+        if (std::wstring_view(sourceName.viewGdiDeviceName) != gdiDeviceName) {
+            continue;
+        }
+
+        return isInternalOutputTechnology(path.targetInfo.outputTechnology);
+    }
+
+    return false;
+}
+
 } // namespace
 
 WindowsDdcBackend::~WindowsDdcBackend() {
@@ -287,6 +344,8 @@ BOOL CALLBACK WindowsDdcBackend::monitorEnumProc(HMONITOR monitorHandle, HDC, LP
     info.id = WideToUtf8(displayDevice.DeviceID);
 
     info.isPrimary = (monitorInfo.dwFlags & MONITORINFOF_PRIMARY) != 0;
+
+    info.isInternalDisplay = isInternalDisplay(monitorInfo.szDevice);
 
     info.bounds.x = monitorInfo.rcMonitor.left;
 
