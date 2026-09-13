@@ -77,6 +77,8 @@ class MonitorController {
     Result<VcpValue> getGamma(const std::string& monitorId);
     Result<void> setGamma(const std::string& monitorId, std::uint16_t value);
 
+    Result<std::vector<InputSource>> getSupportedInputSources(const std::string& monitorId);
+
   private:
     std::unique_ptr<IDdcBackend> m_backend;
     std::unordered_map<std::string, std::optional<MonitorCapabilities>> m_capabilitiesCache;

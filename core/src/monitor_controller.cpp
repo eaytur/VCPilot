@@ -208,11 +208,51 @@ MonitorController::MonitorController(std::unique_ptr<IDdcBackend> backend)
     : m_backend(std::move(backend)) {}
 
 Result<std::vector<MonitorInfo>> MonitorController::getMonitorInfos() {
-    return m_backend->getMonitorInfos();
+    auto monitorInfos = m_backend->getMonitorInfos();
+
+    if (!monitorInfos) {
+        return std::unexpected(monitorInfos.error());
+    }
+
+    for (auto it = m_capabilitiesCache.begin(); it != m_capabilitiesCache.end();) {
+
+        const auto exists =
+            std::find_if(monitorInfos->begin(), monitorInfos->end(),
+                         [&it](const MonitorInfo& info) { return info.id == it->first; });
+
+        if (exists == monitorInfos->end()) {
+            VCPLOG_TRACE("Removing capabilities cache entry "
+                         "for disconnected monitor '{}'",
+                         it->first);
+
+            it = m_capabilitiesCache.erase(it);
+        } else {
+            ++it;
+        }
+    }
+
+    return monitorInfos;
 }
 
 Result<MonitorCapabilities> MonitorController::getCapabilities(const std::string& monitorId) {
-    return m_backend->getCapabilities(monitorId);
+    const auto cached = m_capabilitiesCache.find(monitorId);
+
+    if (cached != m_capabilitiesCache.end() && cached->second.has_value()) {
+
+        VCPLOG_TRACE("Using cached capabilities for monitor '{}'", monitorId);
+
+        return *cached->second;
+    }
+
+    auto capabilities = m_backend->getCapabilities(monitorId);
+
+    if (!capabilities) {
+        return std::unexpected(capabilities.error());
+    }
+
+    m_capabilitiesCache[monitorId] = *capabilities;
+
+    return *capabilities;
 }
 
 Result<std::vector<Monitor>> MonitorController::getMonitors() {
@@ -502,6 +542,39 @@ Result<VcpValue> MonitorController::getGamma(const std::string& monitorId) {
 Result<void> MonitorController::setGamma(const std::string& monitorId, std::uint16_t value) {
 
     return setVcp(monitorId, mccs_vcp_codes::kGamma, value);
+}
+
+Result<std::vector<InputSource>>
+MonitorController::getSupportedInputSources(const std::string& monitorId) {
+    auto capabilities = getCapabilities(monitorId);
+
+    if (!capabilities) {
+        return std::unexpected(capabilities.error());
+    }
+
+    std::vector<InputSource> sources;
+
+    const auto feature =
+        std::find_if(capabilities->vcpFeatures.begin(), capabilities->vcpFeatures.end(),
+                     [](const VcpCapability& capability) {
+                         return capability.code == mccs_vcp_codes::kInputSource;
+                     });
+
+    if (feature == capabilities->vcpFeatures.end()) {
+        return sources;
+    }
+
+    sources.reserve(feature->values.size());
+
+    for (const auto value : feature->values) {
+        const auto source = fromMccsValue(value);
+
+        if (source) {
+            sources.push_back(*source);
+        }
+    }
+
+    return sources;
 }
 
 } // namespace vcpilot
