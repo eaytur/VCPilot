@@ -63,7 +63,6 @@ Rectangle {
             indicatorStyle: NavigationButton.Underline
 
             onNavigationRequested: function(index) {
-                root.currentIndex = index
                 root.navigationRequested(index)
             }
         }

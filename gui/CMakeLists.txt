@@ -42,7 +42,12 @@ qt_add_qml_module(vcpilot_gui
         qml/components/AppHeader.qml
         qml/components/AppSwitch.qml
         qml/components/ActionCard.qml
+        qml/components/MonitorStrip.qml
+        qml/components/StatusIndicator.qml
+        qml/components/AppFooter.qml
+        qml/components/MonitorLayout.qml
         qml/pages/DashboardPage.qml
+        qml/pages/ControlsPage.qml
 
     RESOURCES
         assets/icons/layout-dashboard.svg
@@ -51,6 +56,9 @@ qt_add_qml_module(vcpilot_gui
         assets/icons/moon.svg
         assets/icons/laptop.svg
         assets/icons/plus.svg
+        assets/icons/forward.svg
+        assets/icons/panels-top-left.svg
+        assets/icons/controls.svg
 )
 
 target_link_libraries(vcpilot_gui

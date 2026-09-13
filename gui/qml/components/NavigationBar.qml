@@ -28,7 +28,6 @@ RowLayout {
             indicatorStyle: root.indicatorStyle
 
             onClicked: {
-                root.currentIndex = index
                 root.navigationRequested(index)
             }
         }

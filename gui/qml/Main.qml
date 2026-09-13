@@ -17,8 +17,13 @@ ApplicationWindow {
 
     color: Theme.background
 
-    property int currentPage: 0
+    property int currentPage: Main.Dashboard
+    property string selectedMonitorId: ""
 
+    enum Page {
+        Dashboard,
+        Controls
+    }
 
     ColumnLayout {
         anchors.fill: parent
@@ -34,11 +39,32 @@ ApplicationWindow {
                 {
                     text: "Dashboard",
                     icon: "qrc:/qt/qml/VCPilot/assets/icons/layout-dashboard.svg"
+                },
+                {
+                    text: "Controls",
+                    icon: "qrc:/qt/qml/VCPilot/assets/icons/controls.svg"
                 }
             ]
 
             onNavigationRequested: function(index) {
                 window.currentPage = index
+            }
+        }
+
+        MonitorStrip {
+            Layout.fillWidth: true
+            Layout.preferredHeight: 190
+
+            monitors: VCPilotAdapter.monitors
+
+            selectedMonitorId: window.selectedMonitorId
+
+            onMonitorSelected: function(monitorId) {
+                window.selectedMonitorId = monitorId
+            }
+
+            onRefreshRequested: {
+                VCPilotAdapter.refreshMonitors()
             }
         }
 
@@ -48,9 +74,30 @@ ApplicationWindow {
 
             currentIndex: window.currentPage
 
-
             DashboardPage {
+                selectedMonitorId: window.selectedMonitorId
+
+                onMonitorSelected: function(monitorId) {
+                    window.selectedMonitorId = monitorId
+                }
+                onControlRequested: {
+                    window.currentPage = Main.Controls
+                }
+            }
+            ControlsPage {
+                selectedMonitorId: window.selectedMonitorId
             }
         }
+
+        AppFooter {
+            Layout.fillWidth: true
+            Layout.preferredHeight: 68
+
+            selectedMonitorId: window.selectedMonitorId
+        }
+    }
+
+    Component.onCompleted: {
+        VCPilotAdapter.refreshMonitors()
     }
 }

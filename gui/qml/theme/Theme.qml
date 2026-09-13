@@ -52,14 +52,20 @@ QtObject {
         darkMode ? "#7A7A7A" : "#868E96"
 
     // Semantic
+    readonly property color neutral:
+        darkMode ? "#8A8A8A" : "#6C757D"
+
     readonly property color success:
         darkMode ? "#4CAF50" : "#2E7D32"
 
     readonly property color warning:
         darkMode ? "#FFB74D" : "#E65100"
 
-    readonly property color danger:
+    readonly property color error:
         darkMode ? "#EF5350" : "#C62828"
+
+    readonly property color info: 
+        darkMode ? "#3A5CE0" : "#2E4BC7" 
 
     // Controls
     readonly property color controlHandle:

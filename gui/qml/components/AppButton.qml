@@ -7,9 +7,15 @@ import VCPilot
 Button {
     id: root
 
+    enum IconPosition {
+        Left,
+        Right
+    }
+
     property url iconSource
     property int iconSize: 18
     property bool primary: false
+    property int iconPosition: AppButton.Left
 
     implicitHeight: 40
     implicitWidth: contentRow.implicitWidth + Theme.spacingLg * 2
@@ -19,23 +25,27 @@ Button {
     background: Rectangle {
         radius: Theme.radiusSmall
 
-        readonly property color baseColor:
+        color:
             root.primary
-                ? Theme.primary
-                : root.hovered
-                    ? Theme.surfaceRaised
-                    : Theme.surface
-
-        color: root.down
-            ? Qt.darker(baseColor, 1.25)
-            : baseColor
+                ? root.down
+                    ? Theme.primaryPressed
+                    : root.hovered
+                        ? Theme.primaryHover
+                        : Theme.primary
+                : root.down
+                    ? Qt.darker(Theme.surface, 1.25)
+                    : root.hovered
+                        ? Theme.surfaceRaised
+                        : Theme.surface
 
         border.width: 1
-        border.color: root.primary
-                    ? Theme.primary
-                    : root.hovered
-                        ? Theme.textMuted
-                        : Theme.border
+
+        border.color:
+            root.primary
+                ? color
+                : root.hovered
+                    ? Theme.textMuted
+                    : Theme.border
     }
 
     contentItem: Item {
@@ -47,6 +57,8 @@ Button {
 
             anchors.centerIn: parent
             spacing: Theme.spacingSm
+
+            LayoutMirroring.enabled: root.iconPosition === AppButton.Right
 
             AppIcon {
                 visible: root.iconSource.toString().length > 0

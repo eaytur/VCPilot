@@ -7,7 +7,10 @@ import VCPilot
 ScrollView {
     id: root
 
-    property int selectedMonitorIndex: -1
+    property string selectedMonitorId: ""
+
+    signal controlRequested()
+    signal monitorSelected(string monitorId)
 
     clip: true
 
@@ -22,7 +25,9 @@ ScrollView {
 
         width: root.contentWidth
 
-        implicitHeight: dashboardLayout.implicitHeight + Theme.spacingXl * 2
+        implicitHeight:
+            dashboardLayout.implicitHeight
+            + Theme.spacingXl * 2
 
         ColumnLayout {
             id: dashboardLayout
@@ -30,73 +35,79 @@ ScrollView {
             x: Theme.spacingXl
             y: Theme.spacingXl
 
-            width: contentContainer.width - Theme.spacingXl * 2
+            width:
+                contentContainer.width
+                - Theme.spacingXl * 2
 
             spacing: Theme.spacingLg
 
-            ScrollView {
+            SectionCard {
                 Layout.fillWidth: true
-                Layout.preferredHeight: 180
-
-                clip: true
-
-                ScrollBar.horizontal.policy: ScrollBar.AsNeeded
-                ScrollBar.vertical.policy: ScrollBar.AlwaysOff
-
-                contentWidth: monitorRow.implicitWidth
-                contentHeight: monitorRow.implicitHeight
+                Layout.preferredHeight: 88
 
                 RowLayout {
-                    id: monitorRow
+                    x: Theme.spacingXl
+                    y: (parent.height - implicitHeight) / 2
 
-                    spacing: Theme.spacingLg
+                    width:
+                        parent.width
+                        - Theme.spacingXl * 2
 
-                    Repeater {
-                        model: VCPilotAdapter.monitors
+                    spacing: Theme.spacingSm
 
-                        delegate: MonitorCard {
-                            required property var modelData
-                            required property int index
+                    StatusIndicator {
+                        id: monitorStatus
 
-                            monitorIndex: index + 1
-                            monitorName: modelData.model
-                            modelName: modelData.manufacturer
-                            internalDisplay: modelData.internalDisplay
-
-                            resolution:
-                                modelData.width
-                                + "x"
-                                + modelData.height
-
-                            primaryMonitor: modelData.primary
-
-                            selected:
-                                root.selectedMonitorIndex === index
-
-                            onClicked: {
-                                root.selectedMonitorIndex = index
-                            }
-                        }
+                        status:
+                            VCPilotAdapter.monitors.length > 0
+                            ? StatusIndicator.Success
+                            : StatusIndicator.Warning
                     }
 
-                    ActionCard {
-                        dashedBorder: true
+                    Text {
+                        text:
+                            VCPilotAdapter.monitors.length === 0
+                            ? "No monitors found"
+                            : VCPilotAdapter.monitors.length === 1
+                                ? "1 monitor found"
+                                : VCPilotAdapter.monitors.length
+                                  + " monitors found"
 
-                        iconSource: "qrc:/qt/qml/VCPilot/assets/icons/plus.svg"
+                        color: Theme.textPrimary
+                        font.pixelSize: Theme.fontSm
+                        font.weight: Theme.fontWeightMedium
+                    }
 
-                        title: "Detect Displays"
-                        subtitle: "Scan for new monitors"
+                    Item {
+                        Layout.fillWidth: true
+                    }
 
-                        onClicked: {
-                            VCPilotAdapter.refreshMonitors()
-                        }
+                    AppButton {
+                        primary: true
+
+                        text: "Control monitors"
+
+                        iconSource:
+                            "qrc:/qt/qml/VCPilot/assets/icons/forward.svg"
+
+                        iconPosition: AppButton.Right
+
+                        onClicked: root.controlRequested()
                     }
                 }
             }
-        }
-    }
 
-    Component.onCompleted: {
-        VCPilotAdapter.refreshMonitors()
+            MonitorLayout {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 500
+
+                monitors: VCPilotAdapter.monitors
+                selectedMonitorId: root.selectedMonitorId
+
+                onMonitorSelected: function(monitorId) {
+                    root.monitorSelected(monitorId)
+                }
+            }
+        }
     }
 }
