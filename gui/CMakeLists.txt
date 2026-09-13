@@ -7,8 +7,14 @@ qt_standard_project_setup(REQUIRES 6.8)
 
 qt_add_executable(vcpilot_gui
     src/main.cpp
+    src/adapter/vcpilot_adapter.cpp
+    src/adapter/vcpilot_adapter.hpp
 )
 
+target_include_directories(vcpilot_gui
+    PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
 
 set_source_files_properties(
     qml/theme/Theme.qml
@@ -35,6 +41,7 @@ qt_add_qml_module(vcpilot_gui
         qml/components/NavigationBar.qml
         qml/components/AppHeader.qml
         qml/components/AppSwitch.qml
+        qml/components/ActionCard.qml
         qml/pages/DashboardPage.qml
 
     RESOURCES
@@ -43,6 +50,7 @@ qt_add_qml_module(vcpilot_gui
         assets/icons/sun.svg
         assets/icons/moon.svg
         assets/icons/laptop.svg
+        assets/icons/plus.svg
 )
 
 target_link_libraries(vcpilot_gui

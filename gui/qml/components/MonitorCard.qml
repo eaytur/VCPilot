@@ -15,6 +15,9 @@ Rectangle {
     property bool selected: false
     property bool internalDisplay: false
     property int monitorIndex: 0
+    property url iconSource: root.internalDisplay
+        ? "qrc:/qt/qml/VCPilot/assets/icons/laptop.svg"
+        : "qrc:/qt/qml/VCPilot/assets/icons/monitor.svg"
 
     signal clicked()
 
@@ -73,9 +76,7 @@ Rectangle {
 
                 iconSize: 34
 
-                source: root.internalDisplay
-                    ? "qrc:/qt/qml/VCPilot/assets/icons/laptop.svg"
-                    : "qrc:/qt/qml/VCPilot/assets/icons/monitor.svg"
+                source: root.iconSource 
 
                 iconColor: root.selected
                            ? Theme.primary
@@ -124,7 +125,7 @@ Rectangle {
                     Text {
                         anchors.centerIn: parent
 
-                        text: root.monitorIndex + 1
+                        text: root.monitorIndex
 
                         color: root.selected
                                ? Theme.textPrimary
@@ -143,9 +144,19 @@ Rectangle {
             }
 
             Text {
-                text: root.resolution + " · " + root.connection
-                color: Theme.textMuted
+                text: root.resolution 
+                color: Theme.textSecondary
                 font.pixelSize: Theme.fontXs
+
+                elide: Text.ElideRight
+            }
+
+            Text {
+                text:root.connection
+                color: Theme.textSecondary
+                font.pixelSize: Theme.fontXs
+                font.weight: Theme.fontWeightBold
+                
                 elide: Text.ElideRight
             }
 
@@ -158,7 +169,7 @@ Rectangle {
     }
 
     Rectangle {
-        visible: root.primaryMonitor
+        visible: primaryMonitor
 
         anchors {
             right: parent.right
