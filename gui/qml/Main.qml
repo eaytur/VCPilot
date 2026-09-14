@@ -96,8 +96,4 @@ ApplicationWindow {
             selectedMonitorId: window.selectedMonitorId
         }
     }
-
-    Component.onCompleted: {
-        VCPilotAdapter.refreshMonitors()
-    }
 }

@@ -38,6 +38,9 @@ ScrollView {
 
             spacing: Theme.spacingLg
 
+            InputSourceControl {
+                monitorId: root.selectedMonitorId
+            }
         }
     }
 }

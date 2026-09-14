@@ -39,8 +39,10 @@ ScrollView {
                 required property int index
 
                 monitorIndex: index + 1
+
                 monitorName: modelData.model
                 modelName: modelData.manufacturer
+
                 internalDisplay: modelData.internalDisplay
 
                 resolution:
@@ -60,13 +62,42 @@ ScrollView {
         }
 
         ActionCard {
+            id: detectCard
+
             dashedBorder: true
+
+            enabled: !VCPilotAdapter.detecting
 
             iconSource:
                 "qrc:/qt/qml/VCPilot/assets/icons/plus.svg"
 
-            title: "Detect Displays"
-            subtitle: "Scan for new monitors"
+            title:
+                VCPilotAdapter.detecting
+                    ? "Detecting Displays"
+                    : "Detect Displays"
+
+            subtitle:
+                VCPilotAdapter.detecting
+                    ? "Scanning connected monitors..."
+                    : "Scan for new monitors"
+
+            ScanProgressBar {
+                anchors {
+                    left: parent.left
+                    right: parent.right
+                    bottom: parent.bottom
+
+                    leftMargin: Theme.spacingLg
+                    rightMargin: Theme.spacingLg
+                    bottomMargin: Theme.spacingSm
+                }
+
+                height: 5
+
+                running: VCPilotAdapter.detecting
+
+                z: 10
+            }
 
             onClicked: {
                 root.refreshRequested()

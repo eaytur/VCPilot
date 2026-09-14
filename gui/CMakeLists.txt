@@ -46,6 +46,8 @@ qt_add_qml_module(vcpilot_gui
         qml/components/StatusIndicator.qml
         qml/components/AppFooter.qml
         qml/components/MonitorLayout.qml
+        qml/components/InputSourceControl.qml
+        qml/components/ScanProgressBar.qml
         qml/pages/DashboardPage.qml
         qml/pages/ControlsPage.qml
 
@@ -65,6 +67,7 @@ target_link_libraries(vcpilot_gui
     PRIVATE
         Qt6::Quick
         Qt6::QuickControls2
+        Qt6::Concurrent
         vcpilot_core
 )
 

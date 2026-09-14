@@ -1,42 +1,405 @@
 #include "adapter/vcpilot_adapter.hpp"
 
+#include <QFutureWatcher>
 #include <QVariantMap>
+#include <QtConcurrent>
 
-VCPilotAdapter::VCPilotAdapter(QObject* parent) : QObject(parent) {}
+#include <optional>
+#include <string_view>
+
+namespace {
+
+QString inputSourceKey(vcpilot::InputSource source) {
+    switch (source) {
+    case vcpilot::InputSource::Vga1:
+        return "vga1";
+
+    case vcpilot::InputSource::Vga2:
+        return "vga2";
+
+    case vcpilot::InputSource::Dvi1:
+        return "dvi1";
+
+    case vcpilot::InputSource::Dvi2:
+        return "dvi2";
+
+    case vcpilot::InputSource::DisplayPort1:
+        return "dp1";
+
+    case vcpilot::InputSource::DisplayPort2:
+        return "dp2";
+
+    case vcpilot::InputSource::Hdmi1:
+        return "hdmi1";
+
+    case vcpilot::InputSource::Hdmi2:
+        return "hdmi2";
+    }
+
+    return {};
+}
+
+QString inputSourceName(vcpilot::InputSource source) {
+    switch (source) {
+    case vcpilot::InputSource::Vga1:
+        return "VGA 1";
+
+    case vcpilot::InputSource::Vga2:
+        return "VGA 2";
+
+    case vcpilot::InputSource::Dvi1:
+        return "DVI 1";
+
+    case vcpilot::InputSource::Dvi2:
+        return "DVI 2";
+
+    case vcpilot::InputSource::DisplayPort1:
+        return "DisplayPort 1";
+
+    case vcpilot::InputSource::DisplayPort2:
+        return "DisplayPort 2";
+
+    case vcpilot::InputSource::Hdmi1:
+        return "HDMI 1";
+
+    case vcpilot::InputSource::Hdmi2:
+        return "HDMI 2";
+    }
+
+    const std::string_view name = vcpilot::toString(source);
+
+    return QString::fromUtf8(name.data(), static_cast<qsizetype>(name.size()));
+}
+
+std::optional<vcpilot::InputSource> inputSourceFromKey(const QString& key) {
+    if (key == "vga1") {
+        return vcpilot::InputSource::Vga1;
+    }
+
+    if (key == "vga2") {
+        return vcpilot::InputSource::Vga2;
+    }
+
+    if (key == "dvi1") {
+        return vcpilot::InputSource::Dvi1;
+    }
+
+    if (key == "dvi2") {
+        return vcpilot::InputSource::Dvi2;
+    }
+
+    if (key == "dp1") {
+        return vcpilot::InputSource::DisplayPort1;
+    }
+
+    if (key == "dp2") {
+        return vcpilot::InputSource::DisplayPort2;
+    }
+
+    if (key == "hdmi1") {
+        return vcpilot::InputSource::Hdmi1;
+    }
+
+    if (key == "hdmi2") {
+        return vcpilot::InputSource::Hdmi2;
+    }
+
+    return std::nullopt;
+}
+
+} // namespace
+
+VCPilotAdapter::VCPilotAdapter(QObject* parent) : QObject(parent) {
+    m_ddcThreadPool.setMaxThreadCount(1);
+}
 
 QVariantList VCPilotAdapter::monitors() const {
     return m_monitors;
 }
 
 void VCPilotAdapter::refreshMonitors() {
-    const auto result = m_controller.getMonitorInfos();
+    if (m_detecting) {
+        return;
+    }
+
+    m_detecting = true;
+    emit detectingChanged();
+
+    using ResultType = vcpilot::Result<std::vector<vcpilot::Monitor>>;
+
+    auto* watcher = new QFutureWatcher<ResultType>(this);
+
+    connect(watcher, &QFutureWatcher<ResultType>::finished, this, [this, watcher]() {
+        const auto result = watcher->result();
+
+        watcher->deleteLater();
+
+        m_detecting = false;
+        emit detectingChanged();
+
+        if (!result) {
+            return;
+        }
+
+        QVariantList monitors;
+
+        monitors.reserve(static_cast<qsizetype>(result->size()));
+
+        for (const auto& monitor : *result) {
+            const auto& info = monitor.info;
+
+            QVariantMap item;
+
+            item["id"] = QString::fromStdString(info.id);
+
+            item["manufacturer"] = QString::fromStdString(info.manufacturer);
+
+            item["model"] = QString::fromStdString(info.model);
+
+            item["serial"] = QString::fromStdString(info.serial);
+
+            item["primary"] = info.isPrimary;
+
+            item["x"] = info.bounds.x;
+
+            item["y"] = info.bounds.y;
+
+            item["width"] = info.bounds.width;
+
+            item["height"] = info.bounds.height;
+
+            item["internalDisplay"] = info.isInternalDisplay;
+
+            monitors.append(item);
+        }
+
+        if (m_monitors == monitors) {
+            return;
+        }
+
+        m_monitors = std::move(monitors);
+        emit monitorsChanged();
+    });
+
+    watcher->setFuture(
+        QtConcurrent::run(&m_ddcThreadPool, [this]() { return m_controller.getMonitors(); }));
+}
+
+int VCPilotAdapter::brightness() const {
+    return m_brightness;
+}
+
+void VCPilotAdapter::loadBrightness(const QString& monitorId) {
+
+    if (monitorId.isEmpty()) {
+        return;
+    }
+
+    const auto result = m_controller.getBrightness(monitorId.toStdString());
 
     if (!result) {
         return;
     }
 
-    QVariantList monitors;
+    const int brightness = static_cast<int>(result->current);
 
-    for (const auto& monitorInfo : *result) {
-        QVariantMap monitor;
-
-        monitor["id"] = QString::fromStdString(monitorInfo.id);
-        monitor["manufacturer"] = QString::fromStdString(monitorInfo.manufacturer);
-        monitor["model"] = QString::fromStdString(monitorInfo.model);
-        monitor["serial"] = QString::fromStdString(monitorInfo.serial);
-
-        monitor["primary"] = monitorInfo.isPrimary;
-
-        monitor["x"] = monitorInfo.bounds.x;
-        monitor["y"] = monitorInfo.bounds.y;
-        monitor["width"] = monitorInfo.bounds.width;
-        monitor["height"] = monitorInfo.bounds.height;
-        monitor["internalDisplay"] = monitorInfo.isInternalDisplay;
-
-        monitors.append(monitor);
+    if (m_brightness == brightness) {
+        return;
     }
 
-    m_monitors = std::move(monitors);
+    m_brightness = brightness;
+    emit brightnessChanged();
+}
 
-    emit monitorsChanged();
+void VCPilotAdapter::setBrightness(const QString& monitorId, int value) {
+
+    if (monitorId.isEmpty()) {
+        return;
+    }
+
+    const auto result =
+        m_controller.setBrightness(monitorId.toStdString(), static_cast<std::uint16_t>(value));
+
+    if (!result) {
+        return;
+    }
+
+    if (m_brightness == value) {
+        return;
+    }
+
+    m_brightness = value;
+    emit brightnessChanged();
+}
+
+QVariantList VCPilotAdapter::inputSources() const {
+    return m_inputSources;
+}
+
+QString VCPilotAdapter::currentInputSource() const {
+    return m_currentInputSource;
+}
+
+bool VCPilotAdapter::inputSourceLoading() const {
+    return m_inputSourceLoading;
+}
+
+void VCPilotAdapter::loadInputControl(const QString& monitorId) {
+
+    // Invalidate every previous async current-source request.
+    const quint64 requestGeneration = ++m_inputSourceLoadGeneration;
+
+    if (monitorId.isEmpty()) {
+        if (!m_inputSources.isEmpty()) {
+            m_inputSources.clear();
+            emit inputSourcesChanged();
+        }
+
+        if (!m_currentInputSource.isEmpty()) {
+            m_currentInputSource.clear();
+            emit currentInputSourceChanged();
+        }
+
+        if (m_inputSourceLoading) {
+            m_inputSourceLoading = false;
+            emit inputSourceLoadingChanged();
+        }
+
+        return;
+    }
+
+    const std::string id = monitorId.toStdString();
+
+    /*
+     * This should normally be a cache hit because refreshMonitors()
+     * calls getMonitors(), which preloads capabilities.
+     */
+    const auto supported = m_controller.getSupportedInputSources(id);
+
+    if (!supported) {
+        if (!m_inputSources.isEmpty()) {
+            m_inputSources.clear();
+            emit inputSourcesChanged();
+        }
+
+        if (!m_currentInputSource.isEmpty()) {
+            m_currentInputSource.clear();
+            emit currentInputSourceChanged();
+        }
+
+        if (m_inputSourceLoading) {
+            m_inputSourceLoading = false;
+            emit inputSourceLoadingChanged();
+        }
+
+        return;
+    }
+
+    QVariantList sources;
+
+    sources.reserve(static_cast<qsizetype>(supported->size()));
+
+    for (const auto source : *supported) {
+        QVariantMap item;
+
+        item["key"] = inputSourceKey(source);
+
+        item["name"] = inputSourceName(source);
+
+        sources.append(item);
+    }
+
+    if (m_inputSources != sources) {
+        m_inputSources = std::move(sources);
+        emit inputSourcesChanged();
+    }
+
+    /*
+     * Do not keep the previous monitor's active source highlighted
+     * while the new monitor is being queried.
+     */
+    if (!m_currentInputSource.isEmpty()) {
+        m_currentInputSource.clear();
+        emit currentInputSourceChanged();
+    }
+
+    if (!m_inputSourceLoading) {
+        m_inputSourceLoading = true;
+        emit inputSourceLoadingChanged();
+    }
+
+    using ResultType = vcpilot::Result<vcpilot::InputSource>;
+
+    auto* watcher = new QFutureWatcher<ResultType>(this);
+
+    connect(watcher, &QFutureWatcher<ResultType>::finished, this,
+            [this, watcher, requestGeneration]() {
+                const auto result = watcher->result();
+
+                watcher->deleteLater();
+
+                if (requestGeneration != m_inputSourceLoadGeneration) {
+                    return;
+                }
+
+                if (m_inputSourceLoading) {
+                    m_inputSourceLoading = false;
+                    emit inputSourceLoadingChanged();
+                }
+
+                if (!result) {
+                    return;
+                }
+
+                const QString currentKey = inputSourceKey(*result);
+
+                if (m_currentInputSource == currentKey) {
+                    return;
+                }
+
+                m_currentInputSource = currentKey;
+
+                emit currentInputSourceChanged();
+            });
+
+    watcher->setFuture(QtConcurrent::run(&m_ddcThreadPool,
+                                         [this, id]() { return m_controller.getInputSource(id); }));
+}
+
+void VCPilotAdapter::setInputSource(const QString& monitorId, const QString& sourceKey) {
+
+    if (monitorId.isEmpty()) {
+        return;
+    }
+
+    const auto source = inputSourceFromKey(sourceKey);
+
+    if (!source) {
+        return;
+    }
+
+    const auto result = m_controller.setInputSource(monitorId.toStdString(), *source);
+
+    if (!result) {
+        return;
+    }
+
+    ++m_inputSourceLoadGeneration;
+
+    if (m_inputSourceLoading) {
+        m_inputSourceLoading = false;
+        emit inputSourceLoadingChanged();
+    }
+
+    if (m_currentInputSource == sourceKey) {
+        return;
+    }
+
+    m_currentInputSource = sourceKey;
+
+    emit currentInputSourceChanged();
+}
+
+bool VCPilotAdapter::detecting() const {
+    return m_detecting;
 }
