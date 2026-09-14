@@ -107,9 +107,11 @@ ScrollView {
                         Layout.alignment: Qt.AlignHCenter
                         Layout.maximumWidth: 420
 
-                        text: root.selectedMonitor.internalDisplay
-                            ? "Built-in displays are not currently supported by VCPilot."
-                            : "This display cannot currently be controlled by VCPilot."
+                        text: root.selectedMonitor
+                            ? (root.selectedMonitor.internalDisplay
+                                ? "Built-in displays are not currently supported by VCPilot."
+                                : "This display cannot currently be controlled by VCPilot.")
+                            : ""
 
                         horizontalAlignment: Text.AlignHCenter
                         wrapMode: Text.WordWrap
