@@ -44,7 +44,8 @@ ScrollView {
                 modelName: modelData.manufacturer
 
                 internalDisplay: modelData.internalDisplay
-
+                inputSource: modelData.currentInputSource
+                
                 resolution:
                     modelData.width
                     + "x"

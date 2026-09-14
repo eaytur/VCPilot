@@ -68,6 +68,11 @@ ScrollView {
                     Layout.fillWidth: true
 
                     monitorId: root.selectedMonitorId
+
+                    currentInputSource:
+                        root.selectedMonitor !== null
+                        ? root.selectedMonitor.currentInputSource
+                        : ""
                 }
             }
 

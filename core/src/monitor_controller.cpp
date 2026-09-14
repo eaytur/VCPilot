@@ -590,4 +590,17 @@ MonitorController::getSupportedInputSources(const std::string& monitorId) {
     return sources;
 }
 
+Result<MonitorState> MonitorController::getMonitorState(const std::string& monitorId) {
+
+    MonitorState state;
+
+    auto inputSource = getInputSource(monitorId);
+
+    if (inputSource) {
+        state.inputSource = *inputSource;
+    }
+
+    return state;
+}
+
 } // namespace vcpilot

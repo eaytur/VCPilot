@@ -9,6 +9,8 @@ qt_add_executable(vcpilot_gui
     src/main.cpp
     src/adapter/vcpilot_adapter.cpp
     src/adapter/vcpilot_adapter.hpp
+    src/adapter/monitor_state_manager.cpp
+    src/adapter/monitor_state_manager.hpp
 )
 
 target_include_directories(vcpilot_gui

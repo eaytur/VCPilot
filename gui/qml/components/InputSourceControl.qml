@@ -7,6 +7,7 @@ SectionCard {
     id: root
 
     property string monitorId: ""
+    property string currentInputSource: ""
 
     Layout.fillWidth: true
 
@@ -40,11 +41,17 @@ SectionCard {
             Repeater {
                 model: VCPilotAdapter.inputSources
 
-                delegate: AppButton {
+                delegate: NavigationButton {
                     required property var modelData
 
                     Layout.fillWidth: true
                     text: modelData.name
+
+                    indicatorStyle: NavigationButton.Underline
+
+                    active:
+                        modelData.name ===
+                        root.currentInputSource
 
                     onClicked: {
                         VCPilotAdapter.setInputSource(
@@ -59,7 +66,7 @@ SectionCard {
 
     Component.onCompleted: {
         if (root.monitorId.length > 0) {
-            VCPilotAdapter.loadInputControl(
+            VCPilotAdapter.loadInputSources(
                 root.monitorId
             )
         }
@@ -67,7 +74,7 @@ SectionCard {
 
     onMonitorIdChanged: {
         if (root.monitorId.length > 0) {
-            VCPilotAdapter.loadInputControl(
+            VCPilotAdapter.loadInputSources(
                 root.monitorId
             )
         }

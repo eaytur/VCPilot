@@ -109,8 +109,34 @@ std::optional<vcpilot::InputSource> inputSourceFromKey(const QString& key) {
 
 } // namespace
 
-VCPilotAdapter::VCPilotAdapter(QObject* parent) : QObject(parent) {
+VCPilotAdapter::VCPilotAdapter(QObject* parent)
+    : QObject(parent), m_monitorStateManager(m_controller, m_ddcThreadPool, this) {
+
     m_ddcThreadPool.setMaxThreadCount(1);
+
+    connect(&m_monitorStateManager, &MonitorStateManager::inputSourceChanged, this,
+            [this](const QString& monitorId, const QString& inputSource) {
+                for (qsizetype i = 0; i < m_monitors.size(); ++i) {
+
+                    QVariantMap monitor = m_monitors[i].toMap();
+
+                    if (monitor["id"].toString() != monitorId) {
+                        continue;
+                    }
+
+                    if (monitor["currentInputSource"].toString() == inputSource) {
+                        return;
+                    }
+
+                    monitor["currentInputSource"] = inputSource;
+
+                    m_monitors[i] = monitor;
+
+                    emit monitorsChanged();
+
+                    return;
+                }
+            });
 }
 
 QVariantList VCPilotAdapter::monitors() const {
@@ -142,8 +168,10 @@ void VCPilotAdapter::refreshMonitors() {
         }
 
         QVariantList monitors;
-
         monitors.reserve(static_cast<qsizetype>(result->size()));
+
+        std::vector<std::string> controllableMonitorIds;
+        controllableMonitorIds.reserve(result->size());
 
         for (const auto& monitor : *result) {
             const auto& info = monitor.info;
@@ -173,23 +201,85 @@ void VCPilotAdapter::refreshMonitors() {
             item["controllable"] =
                 monitor.controlStatus == vcpilot::MonitorControlStatus::Supported;
 
+            QString currentInputSource;
+
+            for (const auto& existingMonitor : m_monitors) {
+                const QVariantMap existing = existingMonitor.toMap();
+
+                if (existing["id"].toString() == QString::fromStdString(info.id)) {
+
+                    currentInputSource = existing["currentInputSource"].toString();
+
+                    break;
+                }
+            }
+
+            item["currentInputSource"] = currentInputSource;
+
+            if (monitor.controlStatus == vcpilot::MonitorControlStatus::Supported) {
+
+                controllableMonitorIds.push_back(info.id);
+            }
+
             monitors.append(item);
         }
 
-        if (m_monitors == monitors) {
-            return;
+        if (m_monitors != monitors) {
+            m_monitors = std::move(monitors);
+            emit monitorsChanged();
         }
 
-        m_monitors = std::move(monitors);
-        emit monitorsChanged();
+        m_monitorStateManager.setMonitors(std::move(controllableMonitorIds));
+
+        m_monitorStateManager.start();
     });
 
     watcher->setFuture(
         QtConcurrent::run(&m_ddcThreadPool, [this]() { return m_controller.getMonitors(); }));
 }
-
 int VCPilotAdapter::brightness() const {
     return m_brightness;
+}
+
+void VCPilotAdapter::loadInputSources(const QString& monitorId) {
+    if (monitorId.isEmpty()) {
+        if (!m_inputSources.isEmpty()) {
+            m_inputSources.clear();
+            emit inputSourcesChanged();
+        }
+
+        return;
+    }
+
+    const auto supported = m_controller.getSupportedInputSources(monitorId.toStdString());
+
+    if (!supported) {
+        if (!m_inputSources.isEmpty()) {
+            m_inputSources.clear();
+            emit inputSourcesChanged();
+        }
+
+        return;
+    }
+
+    QVariantList sources;
+    sources.reserve(static_cast<qsizetype>(supported->size()));
+
+    for (const auto source : *supported) {
+        QVariantMap item;
+
+        item["key"] = inputSourceKey(source);
+        item["name"] = inputSourceName(source);
+
+        sources.append(item);
+    }
+
+    if (m_inputSources == sources) {
+        return;
+    }
+
+    m_inputSources = std::move(sources);
+    emit inputSourcesChanged();
 }
 
 void VCPilotAdapter::loadBrightness(const QString& monitorId) {
@@ -239,127 +329,6 @@ QVariantList VCPilotAdapter::inputSources() const {
     return m_inputSources;
 }
 
-QString VCPilotAdapter::currentInputSource() const {
-    return m_currentInputSource;
-}
-
-bool VCPilotAdapter::inputSourceLoading() const {
-    return m_inputSourceLoading;
-}
-
-void VCPilotAdapter::loadInputControl(const QString& monitorId) {
-
-    const quint64 requestGeneration = ++m_inputSourceLoadGeneration;
-
-    if (monitorId.isEmpty()) {
-        if (!m_inputSources.isEmpty()) {
-            m_inputSources.clear();
-            emit inputSourcesChanged();
-        }
-
-        if (!m_currentInputSource.isEmpty()) {
-            m_currentInputSource.clear();
-            emit currentInputSourceChanged();
-        }
-
-        if (m_inputSourceLoading) {
-            m_inputSourceLoading = false;
-            emit inputSourceLoadingChanged();
-        }
-
-        return;
-    }
-
-    const std::string id = monitorId.toStdString();
-
-    const auto supported = m_controller.getSupportedInputSources(id);
-
-    if (!supported) {
-        if (!m_inputSources.isEmpty()) {
-            m_inputSources.clear();
-            emit inputSourcesChanged();
-        }
-
-        if (!m_currentInputSource.isEmpty()) {
-            m_currentInputSource.clear();
-            emit currentInputSourceChanged();
-        }
-
-        if (m_inputSourceLoading) {
-            m_inputSourceLoading = false;
-            emit inputSourceLoadingChanged();
-        }
-
-        return;
-    }
-
-    QVariantList sources;
-
-    sources.reserve(static_cast<qsizetype>(supported->size()));
-
-    for (const auto source : *supported) {
-        QVariantMap item;
-
-        item["key"] = inputSourceKey(source);
-
-        item["name"] = inputSourceName(source);
-
-        sources.append(item);
-    }
-
-    if (m_inputSources != sources) {
-        m_inputSources = std::move(sources);
-        emit inputSourcesChanged();
-    }
-
-    if (!m_currentInputSource.isEmpty()) {
-        m_currentInputSource.clear();
-        emit currentInputSourceChanged();
-    }
-
-    if (!m_inputSourceLoading) {
-        m_inputSourceLoading = true;
-        emit inputSourceLoadingChanged();
-    }
-
-    using ResultType = vcpilot::Result<vcpilot::InputSource>;
-
-    auto* watcher = new QFutureWatcher<ResultType>(this);
-
-    connect(watcher, &QFutureWatcher<ResultType>::finished, this,
-            [this, watcher, requestGeneration]() {
-                const auto result = watcher->result();
-
-                watcher->deleteLater();
-
-                if (requestGeneration != m_inputSourceLoadGeneration) {
-                    return;
-                }
-
-                if (m_inputSourceLoading) {
-                    m_inputSourceLoading = false;
-                    emit inputSourceLoadingChanged();
-                }
-
-                if (!result) {
-                    return;
-                }
-
-                const QString currentKey = inputSourceKey(*result);
-
-                if (m_currentInputSource == currentKey) {
-                    return;
-                }
-
-                m_currentInputSource = currentKey;
-
-                emit currentInputSourceChanged();
-            });
-
-    watcher->setFuture(QtConcurrent::run(&m_ddcThreadPool,
-                                         [this, id]() { return m_controller.getInputSource(id); }));
-}
-
 void VCPilotAdapter::setInputSource(const QString& monitorId, const QString& sourceKey) {
 
     if (monitorId.isEmpty()) {
@@ -377,21 +346,6 @@ void VCPilotAdapter::setInputSource(const QString& monitorId, const QString& sou
     if (!result) {
         return;
     }
-
-    ++m_inputSourceLoadGeneration;
-
-    if (m_inputSourceLoading) {
-        m_inputSourceLoading = false;
-        emit inputSourceLoadingChanged();
-    }
-
-    if (m_currentInputSource == sourceKey) {
-        return;
-    }
-
-    m_currentInputSource = sourceKey;
-
-    emit currentInputSourceChanged();
 }
 
 bool VCPilotAdapter::detecting() const {

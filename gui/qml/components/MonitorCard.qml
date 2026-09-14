@@ -11,6 +11,7 @@ Rectangle {
     property string modelName: ""
     property string connection: ""
     property string resolution: ""
+    property string inputSource: ""
     property bool primaryMonitor: false
     property bool selected: false
     property bool internalDisplay: false
@@ -18,7 +19,7 @@ Rectangle {
     property url iconSource: root.internalDisplay
         ? "qrc:/qt/qml/VCPilot/assets/icons/laptop.svg"
         : "qrc:/qt/qml/VCPilot/assets/icons/monitor.svg"
-
+    
     signal clicked()
 
     implicitWidth: 320
@@ -149,6 +150,14 @@ Rectangle {
                 font.pixelSize: Theme.fontXs
 
                 elide: Text.ElideRight
+            }
+            Text {
+                visible: root.inputSource.length > 0
+
+                text: root.inputSource
+
+                color: Theme.textSecondary
+                font.pixelSize: Theme.fontXs
             }
 
             Text {

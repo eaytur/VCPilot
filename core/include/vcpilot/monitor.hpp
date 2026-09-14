@@ -60,6 +60,10 @@ constexpr std::string_view toString(InputSource source) {
 
 enum class MonitorControlStatus { Supported, InternalDisplay, Unavailable };
 
+struct MonitorState {
+    std::optional<InputSource> inputSource;
+};
+
 struct Monitor {
     MonitorInfo info;
     MonitorControlStatus controlStatus{MonitorControlStatus::Unavailable};

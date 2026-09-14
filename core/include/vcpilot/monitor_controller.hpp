@@ -79,6 +79,8 @@ class MonitorController {
 
     Result<std::vector<InputSource>> getSupportedInputSources(const std::string& monitorId);
 
+    Result<MonitorState> getMonitorState(const std::string& monitorId);
+
   private:
     std::unique_ptr<IDdcBackend> m_backend;
     std::unordered_map<std::string, std::optional<MonitorCapabilities>> m_capabilitiesCache;
