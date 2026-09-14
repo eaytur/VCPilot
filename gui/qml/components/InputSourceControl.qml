@@ -40,16 +40,11 @@ SectionCard {
             Repeater {
                 model: VCPilotAdapter.inputSources
 
-                delegate: NavigationButton {
+                delegate: AppButton {
                     required property var modelData
 
                     Layout.fillWidth: true
-
                     text: modelData.name
-
-                    active:
-                        modelData.key ===
-                        VCPilotAdapter.currentInputSource
 
                     onClicked: {
                         VCPilotAdapter.setInputSource(
