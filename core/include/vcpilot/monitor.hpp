@@ -58,8 +58,11 @@ constexpr std::string_view toString(InputSource source) {
     return "Unknown";
 }
 
+enum class MonitorControlStatus { Supported, InternalDisplay, Unavailable };
+
 struct Monitor {
     MonitorInfo info;
+    MonitorControlStatus controlStatus{MonitorControlStatus::Unavailable};
     std::optional<MonitorCapabilities> capabilities;
 };
 

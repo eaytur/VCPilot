@@ -284,6 +284,17 @@ Result<std::vector<Monitor>> MonitorController::getMonitors() {
 
     for (auto& info : *monitorInfos) {
 
+        if (info.isInternalDisplay) {
+
+            monitors.push_back(Monitor{
+                .info = std::move(info),
+                .controlStatus = MonitorControlStatus::InternalDisplay,
+                .capabilities = std::nullopt,
+            });
+
+            continue;
+        }
+
         auto cached = m_capabilitiesCache.find(info.id);
 
         if (cached != m_capabilitiesCache.end()) {
@@ -292,6 +303,8 @@ Result<std::vector<Monitor>> MonitorController::getMonitors() {
 
             monitors.push_back(Monitor{
                 .info = std::move(info),
+                .controlStatus = cached->second.has_value() ? MonitorControlStatus::Supported
+                                                            : MonitorControlStatus::Unavailable,
                 .capabilities = cached->second,
             });
 
@@ -308,6 +321,7 @@ Result<std::vector<Monitor>> MonitorController::getMonitors() {
 
             monitors.push_back(Monitor{
                 .info = std::move(info),
+                .controlStatus = MonitorControlStatus::Supported,
                 .capabilities = std::move(*capabilities),
             });
 
@@ -316,10 +330,9 @@ Result<std::vector<Monitor>> MonitorController::getMonitors() {
             VCPLOG_DEBUG("Capabilities unavailable for monitor '{}': {}", info.id,
                          capabilities.error().message);
 
-            m_capabilitiesCache.emplace(info.id, std::nullopt);
-
             monitors.push_back(Monitor{
                 .info = std::move(info),
+                .controlStatus = MonitorControlStatus::Unavailable,
                 .capabilities = std::nullopt,
             });
         }

@@ -61,6 +61,7 @@ qt_add_qml_module(vcpilot_gui
         assets/icons/forward.svg
         assets/icons/panels-top-left.svg
         assets/icons/controls.svg
+        assets/icons/circle-alert.svg
 )
 
 target_link_libraries(vcpilot_gui

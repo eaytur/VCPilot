@@ -170,6 +170,9 @@ void VCPilotAdapter::refreshMonitors() {
 
             item["internalDisplay"] = info.isInternalDisplay;
 
+            item["controllable"] =
+                monitor.controlStatus == vcpilot::MonitorControlStatus::Supported;
+
             monitors.append(item);
         }
 
@@ -246,7 +249,6 @@ bool VCPilotAdapter::inputSourceLoading() const {
 
 void VCPilotAdapter::loadInputControl(const QString& monitorId) {
 
-    // Invalidate every previous async current-source request.
     const quint64 requestGeneration = ++m_inputSourceLoadGeneration;
 
     if (monitorId.isEmpty()) {
@@ -270,10 +272,6 @@ void VCPilotAdapter::loadInputControl(const QString& monitorId) {
 
     const std::string id = monitorId.toStdString();
 
-    /*
-     * This should normally be a cache hit because refreshMonitors()
-     * calls getMonitors(), which preloads capabilities.
-     */
     const auto supported = m_controller.getSupportedInputSources(id);
 
     if (!supported) {
@@ -314,10 +312,6 @@ void VCPilotAdapter::loadInputControl(const QString& monitorId) {
         emit inputSourcesChanged();
     }
 
-    /*
-     * Do not keep the previous monitor's active source highlighted
-     * while the new monitor is being queried.
-     */
     if (!m_currentInputSource.isEmpty()) {
         m_currentInputSource.clear();
         emit currentInputSourceChanged();
