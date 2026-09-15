@@ -19,7 +19,7 @@ SectionCard {
 
             AppIcon {
                 source:
-                    "qrc:/qt/qml/VCPilot/assets/icons/controls.svg"
+                    "qrc:/qt/qml/VCPilot/assets/icons/input-source.svg"
 
                 iconSize: 18
                 iconColor: Theme.primary

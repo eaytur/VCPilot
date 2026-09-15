@@ -41,7 +41,14 @@ QString inputSourceName(vcpilot::InputSource source) {
 
 struct StateResult {
     QString monitorId;
+
     std::optional<vcpilot::InputSource> inputSource;
+
+    std::optional<vcpilot::VcpValue> brightness;
+    std::optional<vcpilot::VcpValue> contrast;
+
+    std::optional<vcpilot::VcpValue> volume;
+    std::optional<bool> muted;
 };
 
 } // namespace
@@ -58,6 +65,13 @@ MonitorStateManager::MonitorStateManager(vcpilot::MonitorController& controller,
 void MonitorStateManager::setMonitors(std::vector<std::string> monitorIds) {
 
     m_monitorIds = std::move(monitorIds);
+
+    poll();
+}
+
+void MonitorStateManager::setSelectedMonitor(const std::string& monitorId) {
+
+    m_selectedMonitorId = monitorId;
 
     poll();
 }
@@ -96,39 +110,114 @@ void MonitorStateManager::poll() {
 
         for (const auto& result : results) {
 
-            if (!result.inputSource) {
-                continue;
-            }
-
             const std::string id = result.monitorId.toStdString();
 
-            const auto previous = m_inputSources.find(id);
+            if (result.inputSource) {
 
-            if (previous != m_inputSources.end() && previous->second == *result.inputSource) {
-                continue;
+                const auto previous = m_inputSources.find(id);
+
+                if (previous == m_inputSources.end() || previous->second != *result.inputSource) {
+
+                    m_inputSources[id] = *result.inputSource;
+
+                    emit inputSourceChanged(result.monitorId, inputSourceName(*result.inputSource));
+                }
             }
 
-            m_inputSources[id] = *result.inputSource;
+            if (result.brightness) {
 
-            emit inputSourceChanged(result.monitorId, inputSourceName(*result.inputSource));
+                const auto previous = m_brightnessValues.find(id);
+
+                const auto& value = *result.brightness;
+
+                if (previous == m_brightnessValues.end() ||
+                    previous->second.current != value.current ||
+                    previous->second.maximum != value.maximum) {
+
+                    m_brightnessValues[id] = value;
+
+                    emit brightnessChanged(result.monitorId, value.current, value.maximum);
+                }
+            }
+
+            if (result.contrast) {
+
+                const auto previous = m_contrastValues.find(id);
+
+                const auto& value = *result.contrast;
+
+                if (previous == m_contrastValues.end() ||
+                    previous->second.current != value.current ||
+                    previous->second.maximum != value.maximum) {
+
+                    m_contrastValues[id] = value;
+
+                    emit contrastChanged(result.monitorId, value.current, value.maximum);
+                }
+            }
+
+            if (result.volume) {
+
+                const auto previous = m_volumeValues.find(id);
+
+                const auto& value = *result.volume;
+
+                if (previous == m_volumeValues.end() || previous->second.current != value.current ||
+                    previous->second.maximum != value.maximum) {
+
+                    m_volumeValues[id] = value;
+
+                    emit volumeChanged(result.monitorId, value.current, value.maximum);
+                }
+            }
+
+            if (result.muted) {
+
+                const auto previous = m_muteValues.find(id);
+
+                const bool value = *result.muted;
+
+                if (previous == m_muteValues.end() || previous->second != value) {
+
+                    m_muteValues[id] = value;
+
+                    emit muteChanged(result.monitorId, value);
+                }
+            }
         }
     });
 
     const auto monitorIds = m_monitorIds;
+    const auto selectedMonitorId = m_selectedMonitorId;
 
-    watcher->setFuture(QtConcurrent::run(&m_threadPool, [this, monitorIds]() {
+    watcher->setFuture(QtConcurrent::run(&m_threadPool, [this, monitorIds, selectedMonitorId]() {
         ResultList results;
+
         results.reserve(monitorIds.size());
 
         for (const auto& monitorId : monitorIds) {
 
             StateResult result;
+
             result.monitorId = QString::fromStdString(monitorId);
 
-            auto state = m_controller.getMonitorState(monitorId);
+            if (auto source = m_controller.getInputSource(monitorId)) {
 
-            if (state && state->inputSource) {
-                result.inputSource = state->inputSource;
+                result.inputSource = *source;
+            }
+
+            if (monitorId == selectedMonitorId) {
+
+                if (auto state = m_controller.getMonitorState(monitorId)) {
+
+                    result.brightness = state->brightness;
+
+                    result.contrast = state->contrast;
+
+                    result.volume = state->volume;
+
+                    result.muted = state->muted;
+                }
             }
 
             results.push_back(std::move(result));

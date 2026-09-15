@@ -126,7 +126,7 @@ SectionCard {
 
                 Text {
                     text:
-                        "Displays are positioned according to your Windows layout"
+                        "Displays are positioned according to your layout"
 
                     color: Theme.textSecondary
                     font.pixelSize: Theme.fontSm

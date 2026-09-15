@@ -32,7 +32,7 @@ Rectangle {
 
         StatusIndicator {
             status: root.selectedMonitor
-                    ? StatusIndicator.Success
+                    ? StatusIndicator.Info
                     : StatusIndicator.Neutral
         }
 

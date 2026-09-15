@@ -18,12 +18,17 @@ class MonitorStateManager : public QObject {
                                  QObject* parent = nullptr);
 
     void setMonitors(std::vector<std::string> monitorIds);
+    void setSelectedMonitor(const std::string& monitorId);
 
     void start();
     void stop();
 
   signals:
     void inputSourceChanged(const QString& monitorId, const QString& source);
+    void brightnessChanged(const QString& monitorId, int current, int maximum);
+    void contrastChanged(const QString& monitorId, int current, int maximum);
+    void volumeChanged(const QString& monitorId, int current, int maximum);
+    void muteChanged(const QString& monitorId, bool muted);
 
   private:
     void poll();
@@ -34,7 +39,12 @@ class MonitorStateManager : public QObject {
     QTimer m_timer;
 
     std::vector<std::string> m_monitorIds;
+    std::string m_selectedMonitorId;
 
-    bool m_polling{false};
     std::unordered_map<std::string, vcpilot::InputSource> m_inputSources;
+    std::unordered_map<std::string, vcpilot::VcpValue> m_brightnessValues;
+    std::unordered_map<std::string, vcpilot::VcpValue> m_contrastValues;
+    std::unordered_map<std::string, vcpilot::VcpValue> m_volumeValues;
+    std::unordered_map<std::string, bool> m_muteValues;
+    bool m_polling{false};
 };

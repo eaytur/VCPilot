@@ -50,6 +50,10 @@ qt_add_qml_module(vcpilot_gui
         qml/components/MonitorLayout.qml
         qml/components/InputSourceControl.qml
         qml/components/ScanProgressBar.qml
+        qml/components/PictureControl.qml
+        qml/components/CalibrationControl.qml
+        qml/components/AppComboBox.qml
+        qml/components/AudioControl.qml
         qml/pages/DashboardPage.qml
         qml/pages/ControlsPage.qml
 
@@ -64,6 +68,13 @@ qt_add_qml_module(vcpilot_gui
         assets/icons/panels-top-left.svg
         assets/icons/controls.svg
         assets/icons/circle-alert.svg
+        assets/icons/input-source.svg
+        assets/icons/picture.svg
+        assets/icons/calibration.svg
+        assets/icons/image.svg
+        assets/icons/volume-off.svg
+        assets/icons/volume-2.svg
+        assets/images/contrast-calib.png
 )
 
 target_link_libraries(vcpilot_gui

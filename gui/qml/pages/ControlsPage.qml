@@ -24,6 +24,10 @@ ScrollView {
         selectedMonitor !== null
         && selectedMonitor.controllable
 
+    onSelectedMonitorIdChanged: {
+        VCPilotAdapter.selectMonitor(root.selectedMonitorId)
+    }
+
     clip: true
 
     contentWidth: Math.max(1180, availableWidth)
@@ -53,7 +57,7 @@ ScrollView {
 
             spacing: Theme.spacingLg
 
-            ColumnLayout {
+            RowLayout {
                 id: controlsContainer
 
                 visible:
@@ -61,21 +65,88 @@ ScrollView {
                     && root.monitorControllable
 
                 Layout.fillWidth: true
+                Layout.minimumHeight: 540
 
                 spacing: Theme.spacingLg
 
-                InputSourceControl {
+                CalibrationControl {
                     Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    Layout.preferredWidth: 48
+                }
 
-                    monitorId: root.selectedMonitorId
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    Layout.preferredWidth: 52
 
-                    currentInputSource:
-                        root.selectedMonitor !== null
-                        ? root.selectedMonitor.currentInputSource
-                        : ""
+                    spacing: Theme.spacingLg
+
+                    PictureControl {
+                        Layout.fillWidth: true
+
+                        monitorId:
+                            root.selectedMonitorId
+
+                        brightness:
+                            root.selectedMonitor !== null
+                            ? root.selectedMonitor.brightness
+                            : 0
+
+                        brightnessMaximum:
+                            root.selectedMonitor !== null
+                            ? root.selectedMonitor.brightnessMaximum
+                            : 100
+
+                        contrast:
+                            root.selectedMonitor !== null
+                            ? root.selectedMonitor.contrast
+                            : 0
+
+                        contrastMaximum:
+                            root.selectedMonitor !== null
+                            ? root.selectedMonitor.contrastMaximum
+                            : 100
+                    }
+
+                    InputSourceControl {
+                        Layout.fillWidth: true
+
+                        monitorId:
+                            root.selectedMonitorId
+
+                        currentInputSource:
+                            root.selectedMonitor !== null
+                            ? root.selectedMonitor.currentInputSource
+                            : ""
+                    }
+                    AudioControl {
+                        Layout.fillWidth: true
+
+                        monitorId:
+                            root.selectedMonitorId
+
+                        volume:
+                            root.selectedMonitor !== null
+                            ? root.selectedMonitor.volume
+                            : 0
+
+                        volumeMaximum:
+                            root.selectedMonitor !== null
+                            ? root.selectedMonitor.volumeMaximum
+                            : 100
+
+                        muted:
+                            root.selectedMonitor !== null
+                            ? root.selectedMonitor.muted
+                            : false
+                    }
+                    Item {
+                        Layout.fillHeight: true
+                    }
                 }
             }
-
+            
             Item {
                 visible:
                     root.selectedMonitorId !== ""
@@ -92,52 +163,79 @@ ScrollView {
                     spacing: Theme.spacingMd
 
                     AppIcon {
-                        Layout.alignment: Qt.AlignHCenter
+                        Layout.alignment:
+                            Qt.AlignHCenter
 
-                        source: "qrc:/qt/qml/VCPilot/assets/icons/circle-alert.svg"
+                        source:
+                            "qrc:/qt/qml/VCPilot/assets/icons/circle-alert.svg"
+
                         iconSize: 44
                     }
 
                     Label {
-                        Layout.alignment: Qt.AlignHCenter
+                        Layout.alignment:
+                            Qt.AlignHCenter
 
-                        text: "Display controls unavailable"
+                        text:
+                            "Display controls unavailable"
 
-                        color: Theme.textPrimary
-                        font.pixelSize: Theme.fontLg
-                        font.weight: Theme.fontWeightMedium
+                        color:
+                            Theme.textPrimary
+
+                        font.pixelSize:
+                            Theme.fontLg
+
+                        font.weight:
+                            Theme.fontWeightMedium
                     }
 
                     Label {
-                        Layout.alignment: Qt.AlignHCenter
+                        Layout.alignment:
+                            Qt.AlignHCenter
+
                         Layout.maximumWidth: 420
 
-                        text: root.selectedMonitor
-                            ? (root.selectedMonitor.internalDisplay
+                        text:
+                            root.selectedMonitor
+                            ? (
+                                root.selectedMonitor.internalDisplay
                                 ? "Built-in displays are not currently supported by VCPilot."
-                                : "This display cannot currently be controlled by VCPilot.")
+                                : "This display cannot currently be controlled by VCPilot."
+                            )
                             : ""
 
-                        horizontalAlignment: Text.AlignHCenter
-                        wrapMode: Text.WordWrap
+                        horizontalAlignment:
+                            Text.AlignHCenter
 
-                        color: Theme.textSecondary
-                        font.pixelSize: Theme.fontMd
+                        wrapMode:
+                            Text.WordWrap
+
+                        color:
+                            Theme.textSecondary
+
+                        font.pixelSize:
+                            Theme.fontMd
                     }
                 }
             }
 
             Label {
-                visible: root.selectedMonitorId === ""
+                visible:
+                    root.selectedMonitorId === ""
 
                 Layout.fillWidth: true
 
-                text: "Select a display to view its controls."
+                text:
+                    "Select a display to view its controls."
 
-                horizontalAlignment: Text.AlignHCenter
+                horizontalAlignment:
+                    Text.AlignHCenter
 
-                color: Theme.textSecondary
-                font.pixelSize: Theme.fontMd
+                color:
+                    Theme.textSecondary
+
+                font.pixelSize:
+                    Theme.fontMd
             }
         }
     }

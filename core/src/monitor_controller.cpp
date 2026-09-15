@@ -594,10 +594,24 @@ Result<MonitorState> MonitorController::getMonitorState(const std::string& monit
 
     MonitorState state;
 
-    auto inputSource = getInputSource(monitorId);
+    if (auto result = getInputSource(monitorId)) {
+        state.inputSource = *result;
+    }
 
-    if (inputSource) {
-        state.inputSource = *inputSource;
+    if (auto result = getBrightness(monitorId)) {
+        state.brightness = *result;
+    }
+
+    if (auto result = getContrast(monitorId)) {
+        state.contrast = *result;
+    }
+
+    if (auto result = getVolume(monitorId)) {
+        state.volume = *result;
+    }
+
+    if (auto result = getMute(monitorId)) {
+        state.muted = *result;
     }
 
     return state;

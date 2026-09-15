@@ -62,6 +62,12 @@ enum class MonitorControlStatus { Supported, InternalDisplay, Unavailable };
 
 struct MonitorState {
     std::optional<InputSource> inputSource;
+
+    std::optional<VcpValue> brightness;
+    std::optional<VcpValue> contrast;
+
+    std::optional<VcpValue> volume;
+    std::optional<bool> muted;
 };
 
 struct Monitor {

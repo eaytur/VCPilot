@@ -133,7 +133,104 @@ VCPilotAdapter::VCPilotAdapter(QObject* parent)
                     m_monitors[i] = monitor;
 
                     emit monitorsChanged();
+                    return;
+                }
+            });
 
+    connect(&m_monitorStateManager, &MonitorStateManager::brightnessChanged, this,
+            [this](const QString& monitorId, int current, int maximum) {
+                for (qsizetype i = 0; i < m_monitors.size(); ++i) {
+
+                    QVariantMap monitor = m_monitors[i].toMap();
+
+                    if (monitor["id"].toString() != monitorId) {
+                        continue;
+                    }
+
+                    if (monitor["brightness"].toInt() == current &&
+                        monitor["brightnessMaximum"].toInt() == maximum) {
+                        return;
+                    }
+
+                    monitor["brightness"] = current;
+                    monitor["brightnessMaximum"] = maximum;
+
+                    m_monitors[i] = monitor;
+
+                    emit monitorsChanged();
+                    return;
+                }
+            });
+
+    connect(&m_monitorStateManager, &MonitorStateManager::contrastChanged, this,
+            [this](const QString& monitorId, int current, int maximum) {
+                for (qsizetype i = 0; i < m_monitors.size(); ++i) {
+
+                    QVariantMap monitor = m_monitors[i].toMap();
+
+                    if (monitor["id"].toString() != monitorId) {
+                        continue;
+                    }
+
+                    if (monitor["contrast"].toInt() == current &&
+                        monitor["contrastMaximum"].toInt() == maximum) {
+                        return;
+                    }
+
+                    monitor["contrast"] = current;
+                    monitor["contrastMaximum"] = maximum;
+
+                    m_monitors[i] = monitor;
+
+                    emit monitorsChanged();
+                    return;
+                }
+            });
+
+    connect(&m_monitorStateManager, &MonitorStateManager::volumeChanged, this,
+            [this](const QString& monitorId, int current, int maximum) {
+                for (qsizetype i = 0; i < m_monitors.size(); ++i) {
+
+                    QVariantMap monitor = m_monitors[i].toMap();
+
+                    if (monitor["id"].toString() != monitorId) {
+                        continue;
+                    }
+
+                    if (monitor["volume"].toInt() == current &&
+                        monitor["volumeMaximum"].toInt() == maximum) {
+                        return;
+                    }
+
+                    monitor["volume"] = current;
+                    monitor["volumeMaximum"] = maximum;
+
+                    m_monitors[i] = monitor;
+
+                    emit monitorsChanged();
+                    return;
+                }
+            });
+
+    connect(&m_monitorStateManager, &MonitorStateManager::muteChanged, this,
+            [this](const QString& monitorId, bool muted) {
+                for (qsizetype i = 0; i < m_monitors.size(); ++i) {
+
+                    QVariantMap monitor = m_monitors[i].toMap();
+
+                    if (monitor["id"].toString() != monitorId) {
+                        continue;
+                    }
+
+                    if (monitor["muted"].toBool() == muted) {
+                        return;
+                    }
+
+                    monitor["muted"] = muted;
+
+                    m_monitors[i] = monitor;
+
+                    emit monitorsChanged();
                     return;
                 }
             });
@@ -141,6 +238,14 @@ VCPilotAdapter::VCPilotAdapter(QObject* parent)
 
 QVariantList VCPilotAdapter::monitors() const {
     return m_monitors;
+}
+
+QVariantList VCPilotAdapter::inputSources() const {
+    return m_inputSources;
+}
+
+bool VCPilotAdapter::detecting() const {
+    return m_detecting;
 }
 
 void VCPilotAdapter::refreshMonitors() {
@@ -168,9 +273,11 @@ void VCPilotAdapter::refreshMonitors() {
         }
 
         QVariantList monitors;
+
         monitors.reserve(static_cast<qsizetype>(result->size()));
 
         std::vector<std::string> controllableMonitorIds;
+
         controllableMonitorIds.reserve(result->size());
 
         for (const auto& monitor : *result) {
@@ -189,11 +296,8 @@ void VCPilotAdapter::refreshMonitors() {
             item["primary"] = info.isPrimary;
 
             item["x"] = info.bounds.x;
-
             item["y"] = info.bounds.y;
-
             item["width"] = info.bounds.width;
-
             item["height"] = info.bounds.height;
 
             item["internalDisplay"] = info.isInternalDisplay;
@@ -203,21 +307,54 @@ void VCPilotAdapter::refreshMonitors() {
 
             QString currentInputSource;
 
+            int brightness = 0;
+            int brightnessMaximum = 0;
+
+            int contrast = 0;
+            int contrastMaximum = 0;
+
+            int volume = 0;
+            int volumeMaximum = 0;
+
+            bool muted = false;
+
             for (const auto& existingMonitor : m_monitors) {
                 const QVariantMap existing = existingMonitor.toMap();
 
-                if (existing["id"].toString() == QString::fromStdString(info.id)) {
-
-                    currentInputSource = existing["currentInputSource"].toString();
-
-                    break;
+                if (existing["id"].toString() != QString::fromStdString(info.id)) {
+                    continue;
                 }
+
+                currentInputSource = existing["currentInputSource"].toString();
+
+                brightness = existing["brightness"].toInt();
+                brightnessMaximum = existing["brightnessMaximum"].toInt();
+
+                contrast = existing["contrast"].toInt();
+                contrastMaximum = existing["contrastMaximum"].toInt();
+
+                volume = existing["volume"].toInt();
+                volumeMaximum = existing["volumeMaximum"].toInt();
+
+                muted = existing["muted"].toBool();
+
+                break;
             }
 
             item["currentInputSource"] = currentInputSource;
 
-            if (monitor.controlStatus == vcpilot::MonitorControlStatus::Supported) {
+            item["brightness"] = brightness;
+            item["brightnessMaximum"] = brightnessMaximum;
 
+            item["contrast"] = contrast;
+            item["contrastMaximum"] = contrastMaximum;
+
+            item["volume"] = volume;
+            item["volumeMaximum"] = volumeMaximum;
+
+            item["muted"] = muted;
+
+            if (monitor.controlStatus == vcpilot::MonitorControlStatus::Supported) {
                 controllableMonitorIds.push_back(info.id);
             }
 
@@ -237,11 +374,31 @@ void VCPilotAdapter::refreshMonitors() {
     watcher->setFuture(
         QtConcurrent::run(&m_ddcThreadPool, [this]() { return m_controller.getMonitors(); }));
 }
-int VCPilotAdapter::brightness() const {
-    return m_brightness;
+void VCPilotAdapter::selectMonitor(const QString& monitorId) {
+
+    m_monitorStateManager.setSelectedMonitor(monitorId.toStdString());
+}
+
+void VCPilotAdapter::setBrightness(const QString& monitorId, int value) {
+
+    if (monitorId.isEmpty()) {
+        return;
+    }
+
+    m_controller.setBrightness(monitorId.toStdString(), static_cast<std::uint16_t>(value));
+}
+
+void VCPilotAdapter::setContrast(const QString& monitorId, int value) {
+
+    if (monitorId.isEmpty()) {
+        return;
+    }
+
+    m_controller.setContrast(monitorId.toStdString(), static_cast<std::uint16_t>(value));
 }
 
 void VCPilotAdapter::loadInputSources(const QString& monitorId) {
+
     if (monitorId.isEmpty()) {
         if (!m_inputSources.isEmpty()) {
             m_inputSources.clear();
@@ -263,12 +420,14 @@ void VCPilotAdapter::loadInputSources(const QString& monitorId) {
     }
 
     QVariantList sources;
+
     sources.reserve(static_cast<qsizetype>(supported->size()));
 
     for (const auto source : *supported) {
         QVariantMap item;
 
         item["key"] = inputSourceKey(source);
+
         item["name"] = inputSourceName(source);
 
         sources.append(item);
@@ -279,54 +438,8 @@ void VCPilotAdapter::loadInputSources(const QString& monitorId) {
     }
 
     m_inputSources = std::move(sources);
+
     emit inputSourcesChanged();
-}
-
-void VCPilotAdapter::loadBrightness(const QString& monitorId) {
-
-    if (monitorId.isEmpty()) {
-        return;
-    }
-
-    const auto result = m_controller.getBrightness(monitorId.toStdString());
-
-    if (!result) {
-        return;
-    }
-
-    const int brightness = static_cast<int>(result->current);
-
-    if (m_brightness == brightness) {
-        return;
-    }
-
-    m_brightness = brightness;
-    emit brightnessChanged();
-}
-
-void VCPilotAdapter::setBrightness(const QString& monitorId, int value) {
-
-    if (monitorId.isEmpty()) {
-        return;
-    }
-
-    const auto result =
-        m_controller.setBrightness(monitorId.toStdString(), static_cast<std::uint16_t>(value));
-
-    if (!result) {
-        return;
-    }
-
-    if (m_brightness == value) {
-        return;
-    }
-
-    m_brightness = value;
-    emit brightnessChanged();
-}
-
-QVariantList VCPilotAdapter::inputSources() const {
-    return m_inputSources;
 }
 
 void VCPilotAdapter::setInputSource(const QString& monitorId, const QString& sourceKey) {
@@ -341,13 +454,46 @@ void VCPilotAdapter::setInputSource(const QString& monitorId, const QString& sou
         return;
     }
 
-    const auto result = m_controller.setInputSource(monitorId.toStdString(), *source);
+    m_controller.setInputSource(monitorId.toStdString(), *source);
+}
+
+void VCPilotAdapter::setVolume(const QString& monitorId, int value) {
+
+    if (monitorId.isEmpty()) {
+        return;
+    }
+
+    const auto result =
+        m_controller.setVolume(monitorId.toStdString(), static_cast<std::uint16_t>(value));
 
     if (!result) {
         return;
     }
 }
 
-bool VCPilotAdapter::detecting() const {
-    return m_detecting;
+void VCPilotAdapter::setMute(const QString& monitorId, bool muted) {
+
+    if (monitorId.isEmpty()) {
+        return;
+    }
+
+    const auto result = m_controller.setMute(monitorId.toStdString(), muted);
+
+    if (!result) {
+        return;
+    }
+
+    for (qsizetype i = 0; i < m_monitors.size(); ++i) {
+        QVariantMap monitor = m_monitors[i].toMap();
+
+        if (monitor["id"].toString() != monitorId) {
+            continue;
+        }
+
+        monitor["muted"] = muted;
+        m_monitors[i] = monitor;
+
+        emit monitorsChanged();
+        return;
+    }
 }
