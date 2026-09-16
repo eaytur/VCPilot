@@ -305,6 +305,39 @@ void VCPilotAdapter::refreshMonitors() {
             item["controllable"] =
                 monitor.controlStatus == vcpilot::MonitorControlStatus::Supported;
 
+            QVariantList vcpFeatures;
+            QString mccsVersion;
+
+            if (monitor.capabilities) {
+                qDebug() << "  MCCS:" << QString::fromStdString(monitor.capabilities->mccsVersion);
+
+                qDebug() << "  VCP feature count:" << monitor.capabilities->vcpFeatures.size();
+
+                mccsVersion = QString::fromStdString(monitor.capabilities->mccsVersion);
+
+                for (const auto& capability : monitor.capabilities->vcpFeatures) {
+
+                    QVariantMap feature;
+
+                    feature["code"] = static_cast<int>(capability.code);
+
+                    QVariantList values;
+
+                    for (const auto value : capability.values) {
+
+                        values.append(static_cast<int>(value));
+                    }
+
+                    feature["values"] = values;
+
+                    vcpFeatures.append(feature);
+                }
+            }
+
+            item["mccsVersion"] = mccsVersion;
+
+            item["vcpFeatures"] = vcpFeatures;
+
             QString currentInputSource;
 
             int brightness = 0;
@@ -373,10 +406,6 @@ void VCPilotAdapter::refreshMonitors() {
 
     watcher->setFuture(
         QtConcurrent::run(&m_ddcThreadPool, [this]() { return m_controller.getMonitors(); }));
-}
-void VCPilotAdapter::selectMonitor(const QString& monitorId) {
-
-    m_monitorStateManager.setSelectedMonitor(monitorId.toStdString());
 }
 
 void VCPilotAdapter::setBrightness(const QString& monitorId, int value) {
@@ -496,4 +525,76 @@ void VCPilotAdapter::setMute(const QString& monitorId, bool muted) {
         emit monitorsChanged();
         return;
     }
+}
+
+QVariantMap VCPilotAdapter::getVcp(const QString& monitorId, int code) {
+
+    QVariantMap response;
+
+    if (monitorId.isEmpty()) {
+        response["success"] = false;
+        response["error"] = "No monitor selected";
+        return response;
+    }
+
+    if (code < 0 || code > 0xFF) {
+        response["success"] = false;
+        response["error"] = "VCP code must be between 0x00 and 0xFF";
+        return response;
+    }
+
+    const auto result =
+        m_controller.getVcp(monitorId.toStdString(), static_cast<std::uint8_t>(code));
+
+    if (!result) {
+        response["success"] = false;
+        response["error"] = QString::fromStdString(result.error().message);
+
+        return response;
+    }
+
+    response["success"] = true;
+    response["current"] = static_cast<int>(result->current);
+    response["maximum"] = static_cast<int>(result->maximum);
+
+    return response;
+}
+
+QVariantMap VCPilotAdapter::setVcp(const QString& monitorId, int code, int value) {
+
+    QVariantMap response;
+
+    if (monitorId.isEmpty()) {
+        response["success"] = false;
+        response["error"] = "No monitor selected";
+        return response;
+    }
+
+    if (code < 0 || code > 0xFF) {
+        response["success"] = false;
+        response["error"] = "VCP code must be between 0x00 and 0xFF";
+        return response;
+    }
+
+    if (value < 0 || value > 0xFFFF) {
+        response["success"] = false;
+        response["error"] = "VCP value must be between 0x0000 and 0xFFFF";
+
+        return response;
+    }
+
+    const auto result =
+        m_controller.setVcp(monitorId.toStdString(), static_cast<std::uint8_t>(code),
+                            static_cast<std::uint16_t>(value));
+
+    if (!result) {
+        response["success"] = false;
+        response["error"] = QString::fromStdString(result.error().message);
+
+        return response;
+    }
+
+    response["success"] = true;
+
+    return response;
 }

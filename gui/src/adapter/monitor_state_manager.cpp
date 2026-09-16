@@ -43,10 +43,8 @@ struct StateResult {
     QString monitorId;
 
     std::optional<vcpilot::InputSource> inputSource;
-
     std::optional<vcpilot::VcpValue> brightness;
     std::optional<vcpilot::VcpValue> contrast;
-
     std::optional<vcpilot::VcpValue> volume;
     std::optional<bool> muted;
 };
@@ -57,7 +55,7 @@ MonitorStateManager::MonitorStateManager(vcpilot::MonitorController& controller,
                                          QThreadPool& threadPool, QObject* parent)
     : QObject(parent), m_controller(controller), m_threadPool(threadPool) {
 
-    m_timer.setInterval(1500);
+    m_timer.setInterval(2000);
 
     connect(&m_timer, &QTimer::timeout, this, &MonitorStateManager::poll);
 }
@@ -65,13 +63,6 @@ MonitorStateManager::MonitorStateManager(vcpilot::MonitorController& controller,
 void MonitorStateManager::setMonitors(std::vector<std::string> monitorIds) {
 
     m_monitorIds = std::move(monitorIds);
-
-    poll();
-}
-
-void MonitorStateManager::setSelectedMonitor(const std::string& monitorId) {
-
-    m_selectedMonitorId = monitorId;
 
     poll();
 }
@@ -188,9 +179,8 @@ void MonitorStateManager::poll() {
     });
 
     const auto monitorIds = m_monitorIds;
-    const auto selectedMonitorId = m_selectedMonitorId;
 
-    watcher->setFuture(QtConcurrent::run(&m_threadPool, [this, monitorIds, selectedMonitorId]() {
+    watcher->setFuture(QtConcurrent::run(&m_threadPool, [this, monitorIds]() {
         ResultList results;
 
         results.reserve(monitorIds.size());
@@ -201,23 +191,17 @@ void MonitorStateManager::poll() {
 
             result.monitorId = QString::fromStdString(monitorId);
 
-            if (auto source = m_controller.getInputSource(monitorId)) {
+            if (auto state = m_controller.getMonitorState(monitorId)) {
 
-                result.inputSource = *source;
-            }
+                result.inputSource = state->inputSource;
 
-            if (monitorId == selectedMonitorId) {
+                result.brightness = state->brightness;
 
-                if (auto state = m_controller.getMonitorState(monitorId)) {
+                result.contrast = state->contrast;
 
-                    result.brightness = state->brightness;
+                result.volume = state->volume;
 
-                    result.contrast = state->contrast;
-
-                    result.volume = state->volume;
-
-                    result.muted = state->muted;
-                }
+                result.muted = state->muted;
             }
 
             results.push_back(std::move(result));

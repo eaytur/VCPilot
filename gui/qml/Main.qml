@@ -22,7 +22,8 @@ ApplicationWindow {
 
     enum Page {
         Dashboard,
-        Controls
+        Controls,
+        Advanced
     }
 
     ColumnLayout {
@@ -43,6 +44,10 @@ ApplicationWindow {
                 {
                     text: "Controls",
                     icon: "qrc:/qt/qml/VCPilot/assets/icons/controls.svg"
+                },
+                {
+                    text: "Advanced",
+                    icon: "qrc:/qt/qml/VCPilot/assets/icons/terminal.svg"
                 }
             ]
 
@@ -80,11 +85,17 @@ ApplicationWindow {
                 onMonitorSelected: function(monitorId) {
                     window.selectedMonitorId = monitorId
                 }
+
                 onControlRequested: {
                     window.currentPage = Main.Controls
                 }
             }
+
             ControlsPage {
+                selectedMonitorId: window.selectedMonitorId
+            }
+
+            AdvancedPage {
                 selectedMonitorId: window.selectedMonitorId
             }
         }

@@ -54,8 +54,11 @@ qt_add_qml_module(vcpilot_gui
         qml/components/CalibrationControl.qml
         qml/components/AppComboBox.qml
         qml/components/AudioControl.qml
+        qml/components/VcpFeatureTable.qml
+        qml/components/VcpTerminal.qml
         qml/pages/DashboardPage.qml
         qml/pages/ControlsPage.qml
+        qml/pages/AdvancedPage.qml
 
     RESOURCES
         assets/icons/layout-dashboard.svg
@@ -74,6 +77,8 @@ qt_add_qml_module(vcpilot_gui
         assets/icons/image.svg
         assets/icons/volume-off.svg
         assets/icons/volume-2.svg
+        assets/icons/send.svg
+        assets/icons/terminal.svg
         assets/images/contrast-calib.png
 )
 

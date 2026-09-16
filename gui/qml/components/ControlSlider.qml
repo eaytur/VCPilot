@@ -33,7 +33,8 @@ ColumnLayout {
         }
 
         Text {
-            text: Number(root.value).toFixed(root.decimals)
+            text: Number(slider.value).toFixed(root.decimals)
+
             color: Theme.textPrimary
 
             font.pixelSize: Theme.fontMd
@@ -51,13 +52,15 @@ ColumnLayout {
         value: root.value
 
         onMoved: {
-            root.value = value
             root.valueEdited(value)
         }
 
         background: Rectangle {
             x: slider.leftPadding
-            y: slider.topPadding + slider.availableHeight / 2 - height / 2
+            y:
+                slider.topPadding
+                + slider.availableHeight / 2
+                - height / 2
 
             width: slider.availableWidth
             height: 4
@@ -66,7 +69,10 @@ ColumnLayout {
             color: Theme.controlTrack
 
             Rectangle {
-                width: slider.visualPosition * parent.width
+                width:
+                    slider.visualPosition
+                    * parent.width
+
                 height: parent.height
 
                 radius: parent.radius
@@ -75,20 +81,23 @@ ColumnLayout {
         }
 
         handle: Rectangle {
-            x: slider.leftPadding
-               + slider.visualPosition
-               * (slider.availableWidth - width)
+            x:
+                slider.leftPadding
+                + slider.visualPosition
+                * (slider.availableWidth - width)
 
-            y: slider.topPadding
-               + slider.availableHeight / 2
-               - height / 2
+            y:
+                slider.topPadding
+                + slider.availableHeight / 2
+                - height / 2
 
             width: 16
             height: 16
 
             radius: width / 2
 
-            color: slider.pressed
+            color:
+                slider.pressed
                 ? Theme.controlHandlePressed
                 : Theme.controlHandle
 
@@ -109,7 +118,9 @@ ColumnLayout {
 
             states: [
                 State {
-                    when: slider.hovered && !slider.pressed
+                    when:
+                        slider.hovered
+                        && !slider.pressed
 
                     PropertyChanges {
                         target: slider.handle

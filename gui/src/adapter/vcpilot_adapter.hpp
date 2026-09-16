@@ -3,6 +3,7 @@
 #include <QObject>
 #include <QThreadPool>
 #include <QVariantList>
+#include <QVariantMap>
 
 #include "adapter/monitor_state_manager.hpp"
 
@@ -12,9 +13,7 @@ class VCPilotAdapter : public QObject {
     Q_OBJECT
 
     Q_PROPERTY(QVariantList monitors READ monitors NOTIFY monitorsChanged)
-
     Q_PROPERTY(QVariantList inputSources READ inputSources NOTIFY inputSourcesChanged)
-
     Q_PROPERTY(bool detecting READ detecting NOTIFY detectingChanged)
 
   public:
@@ -26,19 +25,17 @@ class VCPilotAdapter : public QObject {
 
     Q_INVOKABLE void refreshMonitors();
 
-    Q_INVOKABLE void selectMonitor(const QString& monitorId);
-
     Q_INVOKABLE void setBrightness(const QString& monitorId, int value);
-
     Q_INVOKABLE void setContrast(const QString& monitorId, int value);
 
     Q_INVOKABLE void loadInputSources(const QString& monitorId);
-
     Q_INVOKABLE void setInputSource(const QString& monitorId, const QString& sourceKey);
 
     Q_INVOKABLE void setVolume(const QString& monitorId, int value);
-
     Q_INVOKABLE void setMute(const QString& monitorId, bool muted);
+
+    Q_INVOKABLE QVariantMap getVcp(const QString& monitorId, int code);
+    Q_INVOKABLE QVariantMap setVcp(const QString& monitorId, int code, int value);
 
   signals:
     void monitorsChanged();

@@ -39,7 +39,6 @@ class MonitorStateManager : public QObject {
     QTimer m_timer;
 
     std::vector<std::string> m_monitorIds;
-    std::string m_selectedMonitorId;
 
     std::unordered_map<std::string, vcpilot::InputSource> m_inputSources;
     std::unordered_map<std::string, vcpilot::VcpValue> m_brightnessValues;

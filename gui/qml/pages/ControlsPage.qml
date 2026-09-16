@@ -21,47 +21,39 @@ ScrollView {
     }
 
     readonly property bool monitorControllable:
-        selectedMonitor !== null
-        && selectedMonitor.controllable
-
-    onSelectedMonitorIdChanged: {
-        VCPilotAdapter.selectMonitor(root.selectedMonitorId)
-    }
+        root.selectedMonitor !== null
+        && root.selectedMonitor.controllable
 
     clip: true
-
-    contentWidth: Math.max(1180, availableWidth)
-    contentHeight: contentContainer.implicitHeight
 
     ScrollBar.horizontal.policy: ScrollBar.AsNeeded
     ScrollBar.vertical.policy: ScrollBar.AsNeeded
 
     Item {
-        id: contentContainer
-
-        width: root.contentWidth
-
-        implicitHeight:
-            dashboardLayout.implicitHeight
-            + Theme.spacingXl * 2
+        width: Math.max(1180, root.availableWidth)
+        height: Math.max(
+            root.availableHeight,
+            contentLayout.implicitHeight + Theme.spacingXl * 2
+        )
 
         ColumnLayout {
-            id: dashboardLayout
+            id: contentLayout
 
-            x: Theme.spacingXl
-            y: Theme.spacingXl
-
-            width:
-                contentContainer.width
-                - Theme.spacingXl * 2
+            anchors {
+                left: parent.left
+                right: parent.right
+                top: parent.top
+                margins: Theme.spacingXl
+            }
 
             spacing: Theme.spacingLg
 
+            /*
+             * Controllable display
+             */
             RowLayout {
-                id: controlsContainer
-
                 visible:
-                    root.selectedMonitorId !== ""
+                    root.selectedMonitor !== null
                     && root.monitorControllable
 
                 Layout.fillWidth: true
@@ -85,8 +77,7 @@ ScrollView {
                     PictureControl {
                         Layout.fillWidth: true
 
-                        monitorId:
-                            root.selectedMonitorId
+                        monitorId: root.selectedMonitorId
 
                         brightness:
                             root.selectedMonitor !== null
@@ -95,6 +86,7 @@ ScrollView {
 
                         brightnessMaximum:
                             root.selectedMonitor !== null
+                            && root.selectedMonitor.brightnessMaximum > 0
                             ? root.selectedMonitor.brightnessMaximum
                             : 100
 
@@ -105,6 +97,7 @@ ScrollView {
 
                         contrastMaximum:
                             root.selectedMonitor !== null
+                            && root.selectedMonitor.contrastMaximum > 0
                             ? root.selectedMonitor.contrastMaximum
                             : 100
                     }
@@ -112,19 +105,18 @@ ScrollView {
                     InputSourceControl {
                         Layout.fillWidth: true
 
-                        monitorId:
-                            root.selectedMonitorId
+                        monitorId: root.selectedMonitorId
 
                         currentInputSource:
                             root.selectedMonitor !== null
                             ? root.selectedMonitor.currentInputSource
                             : ""
                     }
+
                     AudioControl {
                         Layout.fillWidth: true
 
-                        monitorId:
-                            root.selectedMonitorId
+                        monitorId: root.selectedMonitorId
 
                         volume:
                             root.selectedMonitor !== null
@@ -133,6 +125,7 @@ ScrollView {
 
                         volumeMaximum:
                             root.selectedMonitor !== null
+                            && root.selectedMonitor.volumeMaximum > 0
                             ? root.selectedMonitor.volumeMaximum
                             : 100
 
@@ -141,20 +134,22 @@ ScrollView {
                             ? root.selectedMonitor.muted
                             : false
                     }
+
                     Item {
                         Layout.fillHeight: true
                     }
                 }
             }
-            
+
+            /*
+             * Display exists but cannot be controlled
+             */
             Item {
                 visible:
-                    root.selectedMonitorId !== ""
-                    && root.selectedMonitor !== null
+                    root.selectedMonitor !== null
                     && !root.monitorControllable
 
                 Layout.fillWidth: true
-                Layout.fillHeight: true
                 Layout.minimumHeight: 360
 
                 ColumnLayout {
@@ -163,8 +158,7 @@ ScrollView {
                     spacing: Theme.spacingMd
 
                     AppIcon {
-                        Layout.alignment:
-                            Qt.AlignHCenter
+                        Layout.alignment: Qt.AlignHCenter
 
                         source:
                             "qrc:/qt/qml/VCPilot/assets/icons/circle-alert.svg"
@@ -173,30 +167,22 @@ ScrollView {
                     }
 
                     Label {
-                        Layout.alignment:
-                            Qt.AlignHCenter
+                        Layout.alignment: Qt.AlignHCenter
 
-                        text:
-                            "Display controls unavailable"
+                        text: "Display controls unavailable"
 
-                        color:
-                            Theme.textPrimary
+                        color: Theme.textPrimary
 
-                        font.pixelSize:
-                            Theme.fontLg
-
-                        font.weight:
-                            Theme.fontWeightMedium
+                        font.pixelSize: Theme.fontLg
+                        font.weight: Theme.fontWeightMedium
                     }
 
                     Label {
-                        Layout.alignment:
-                            Qt.AlignHCenter
-
+                        Layout.alignment: Qt.AlignHCenter
                         Layout.maximumWidth: 420
 
                         text:
-                            root.selectedMonitor
+                            root.selectedMonitor !== null
                             ? (
                                 root.selectedMonitor.internalDisplay
                                 ? "Built-in displays are not currently supported by VCPilot."
@@ -204,38 +190,37 @@ ScrollView {
                             )
                             : ""
 
-                        horizontalAlignment:
-                            Text.AlignHCenter
+                        horizontalAlignment: Text.AlignHCenter
+                        wrapMode: Text.WordWrap
 
-                        wrapMode:
-                            Text.WordWrap
+                        color: Theme.textSecondary
 
-                        color:
-                            Theme.textSecondary
-
-                        font.pixelSize:
-                            Theme.fontMd
+                        font.pixelSize: Theme.fontMd
                     }
                 }
             }
 
-            Label {
-                visible:
-                    root.selectedMonitorId === ""
+            /*
+             * No display selected
+             */
+            Item {
+                visible: root.selectedMonitorId === ""
 
                 Layout.fillWidth: true
+                Layout.minimumHeight: 360
 
-                text:
-                    "Select a display to view its controls."
+                Label {
+                    anchors.centerIn: parent
 
-                horizontalAlignment:
-                    Text.AlignHCenter
+                    text:
+                        "Select a display to view its controls."
 
-                color:
-                    Theme.textSecondary
+                    horizontalAlignment: Text.AlignHCenter
 
-                font.pixelSize:
-                    Theme.fontMd
+                    color: Theme.textSecondary
+
+                    font.pixelSize: Theme.fontMd
+                }
             }
         }
     }
