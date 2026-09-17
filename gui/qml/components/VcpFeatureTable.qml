@@ -22,60 +22,25 @@ SectionCard {
                 .padStart(2, "0")
     }
 
-    function featureName(code) {
-        switch (code) {
-        case 0x10:
-            return "Brightness"
+    function valuesString(feature) {
+        if (feature.values && feature.values.length > 0) {
+            let result = []
 
-        case 0x12:
-            return "Contrast"
+            for (let i = 0; i < feature.values.length; ++i)
+                result.push(root.codeString(feature.values[i]))
 
-        case 0x14:
-            return "Color Preset"
-
-        case 0x16:
-            return "Red Gain"
-
-        case 0x18:
-            return "Green Gain"
-
-        case 0x1A:
-            return "Blue Gain"
-
-        case 0x60:
-            return "Input Source"
-
-        case 0x62:
-            return "Audio Volume"
-
-        case 0x8D:
-            return "Audio Mute"
-
-        case 0xD6:
-            return "Power Mode"
-
-        default:
-            return "VCP Feature"
+            return result.join(", ")
         }
-    }
 
-    function valuesString(values) {
-        if (!values || values.length === 0)
-            return "—"
+        if (feature.type === "Continuous")
+            return "Continuous"
 
-        let result = []
-
-        for (let i = 0; i < values.length; ++i)
-            result.push(codeString(values[i]))
-
-        return result.join(", ")
+        return "—"
     }
 
     ColumnLayout {
         Layout.fillWidth: true
         Layout.fillHeight: true
-        
-        spacing: Theme.spacingMd
 
         RowLayout {
             Layout.fillWidth: true
@@ -90,6 +55,20 @@ SectionCard {
 
             Item {
                 Layout.fillWidth: true
+            }
+
+            Text {
+                visible: root.features
+                         && root.features.length > 0
+
+                text:
+                    root.features.length
+                    + (root.features.length === 1
+                       ? " feature"
+                       : " features")
+
+                color: Theme.textSecondary
+                font.pixelSize: Theme.fontSm
             }
 
             Text {
@@ -111,13 +90,14 @@ SectionCard {
 
             RowLayout {
                 anchors.fill: parent
+
                 anchors.leftMargin: Theme.spacingMd
                 anchors.rightMargin: Theme.spacingMd
 
                 spacing: Theme.spacingMd
 
                 Text {
-                    Layout.preferredWidth: 90
+                    Layout.preferredWidth: 70
 
                     text: "Code"
 
@@ -127,9 +107,19 @@ SectionCard {
                 }
 
                 Text {
-                    Layout.preferredWidth: 180
+                    Layout.preferredWidth: 210
 
                     text: "Feature"
+
+                    color: Theme.textSecondary
+                    font.pixelSize: Theme.fontSm
+                    font.weight: Theme.fontWeightMedium
+                }
+
+                Text {
+                    Layout.preferredWidth: 100
+
+                    text: "Access"
 
                     color: Theme.textSecondary
                     font.pixelSize: Theme.fontSm
@@ -149,52 +139,80 @@ SectionCard {
         }
 
         ListView {
+            id: featureList
+
             Layout.fillWidth: true
             Layout.fillHeight: true
 
             clip: true
+            spacing: 2
 
             model: root.features
 
-            spacing: 2
+            ScrollBar.vertical: ScrollBar {
+                policy: ScrollBar.AsNeeded
+            }
 
             delegate: Rectangle {
                 required property var modelData
 
                 width: ListView.view.width
-                height: 42
+                height: 44
 
                 radius: 6
-                color: "transparent"
+                color: mouseArea.containsMouse
+                       ? Theme.controlTrack
+                       : "transparent"
 
                 RowLayout {
                     anchors.fill: parent
+
                     anchors.leftMargin: Theme.spacingMd
                     anchors.rightMargin: Theme.spacingMd
 
                     spacing: Theme.spacingMd
 
                     Text {
-                        Layout.preferredWidth: 90
+                        Layout.preferredWidth: 70
 
                         text:
                             root.codeString(
                                 modelData.code)
 
                         color: Theme.primary
+
                         font.pixelSize: Theme.fontSm
                         font.family: "monospace"
                     }
 
                     Text {
-                        Layout.preferredWidth: 180
+                        Layout.preferredWidth: 210
 
                         text:
-                            root.featureName(
-                                modelData.code)
+                            modelData.name
+                            ? modelData.name
+                            : "Unknown VCP Feature"
 
                         color: Theme.textPrimary
+
                         font.pixelSize: Theme.fontSm
+
+                        elide: Text.ElideRight
+                    }
+
+                    Text {
+                        Layout.preferredWidth: 100
+
+                        text:
+                            modelData.access
+                            ? modelData.access
+                            : "Unknown"
+
+                        color: Theme.textSecondary
+
+                        font.pixelSize: Theme.fontSm
+
+                        elide: Text.ElideRight
                     }
 
                     Text {
@@ -202,32 +220,46 @@ SectionCard {
 
                         text:
                             root.valuesString(
-                                modelData.values)
+                                modelData)
 
                         color: Theme.textSecondary
+
                         font.pixelSize: Theme.fontSm
-                        font.family: "monospace"
 
                         elide: Text.ElideRight
                     }
                 }
+
+                MouseArea {
+                    id: mouseArea
+
+                    anchors.fill: parent
+
+                    hoverEnabled: true
+                    acceptedButtons: Qt.NoButton
+                }
             }
         }
 
-        Text {
+        Item {
             visible:
                 !root.features
                 || root.features.length === 0
 
-            Layout.alignment: Qt.AlignHCenter
+            Layout.fillWidth: true
+            Layout.fillHeight: true
 
-            text:
-                root.monitorId === ""
-                ? "Select a display"
-                : "No VCP capabilities reported"
+            Text {
+                anchors.centerIn: parent
 
-            color: Theme.textSecondary
-            font.pixelSize: Theme.fontSm
+                text:
+                    root.monitorId === ""
+                    ? "Select a display"
+                    : "No VCP capabilities reported"
+
+                color: Theme.textSecondary
+                font.pixelSize: Theme.fontSm
+            }
         }
     }
 }

@@ -1,5 +1,7 @@
 #include "adapter/vcpilot_adapter.hpp"
 
+#include "vcpilot/mccs_catalog.hpp"
+
 #include <QFutureWatcher>
 #include <QVariantMap>
 #include <QtConcurrent>
@@ -321,10 +323,27 @@ void VCPilotAdapter::refreshMonitors() {
 
                     feature["code"] = static_cast<int>(capability.code);
 
+                    const auto* descriptor = vcpilot::findVcpFeatureDescriptor(capability.code);
+
+                    if (descriptor) {
+                        feature["name"] =
+                            QString::fromUtf8(descriptor->name.data(),
+                                              static_cast<qsizetype>(descriptor->name.size()));
+
+                        feature["access"] = QString::fromStdString(
+                            std::string(vcpilot::toString(descriptor->access)));
+
+                        feature["type"] = QString::fromStdString(
+                            std::string(vcpilot::toString(descriptor->type)));
+                    } else {
+                        feature["name"] = "Unknown VCP Feature";
+                        feature["access"] = "Unknown";
+                        feature["type"] = "Unknown";
+                    }
+
                     QVariantList values;
 
                     for (const auto value : capability.values) {
-
                         values.append(static_cast<int>(value));
                     }
 
