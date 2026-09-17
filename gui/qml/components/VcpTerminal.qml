@@ -8,15 +8,113 @@ SectionCard {
     id: root
 
     property string monitorId: ""
+
     property string output:
         "VCP Terminal\n" +
         "Type 'help' for available commands.\n"
+
+    property var commandHistory: []
+    property int historyIndex: commandHistory.length
 
     Layout.fillWidth: true
     Layout.fillHeight: true
 
     function appendOutput(text) {
         output += "\n" + text
+    }
+
+    function parseVcpCode(text) {
+        const normalized = text.trim()
+
+        if (normalized.length === 0)
+            return NaN
+
+        if (normalized.toLowerCase().startsWith("0x"))
+            return parseInt(normalized.substring(2), 16)
+
+        return parseInt(normalized, 16)
+    }
+
+    function parseVcpValue(text) {
+        const normalized = text.trim()
+
+        if (normalized.length === 0)
+            return NaN
+
+        // Explicit 0x prefix -> hexadecimal.
+        if (normalized.toLowerCase().startsWith("0x"))
+            return parseInt(normalized.substring(2), 16)
+
+        return parseInt(normalized, 10)
+    }
+
+    function addToHistory(command) {
+        const trimmed = command.trim()
+
+        if (trimmed.length === 0)
+            return
+
+        const updatedHistory = commandHistory.slice()
+
+        if (updatedHistory.length === 0
+                || updatedHistory[updatedHistory.length - 1] !== trimmed) {
+            updatedHistory.push(trimmed)
+        }
+
+        const maxHistorySize = 50
+
+        if (updatedHistory.length > maxHistorySize)
+            updatedHistory.shift()
+
+        commandHistory = updatedHistory
+        historyIndex = commandHistory.length
+    }
+
+    function previousCommand() {
+        if (commandHistory.length === 0)
+            return
+
+        if (historyIndex > 0)
+            historyIndex--
+
+        commandInput.text =
+            commandHistory[historyIndex]
+
+        commandInput.cursorPosition =
+            commandInput.text.length
+    }
+
+    function nextCommand() {
+        if (commandHistory.length === 0)
+            return
+
+        if (historyIndex < commandHistory.length - 1) {
+            historyIndex++
+
+            commandInput.text =
+                commandHistory[historyIndex]
+        } else {
+            historyIndex =
+                commandHistory.length
+
+            commandInput.text = ""
+        }
+
+        commandInput.cursorPosition =
+            commandInput.text.length
+    }
+
+    function submitCommand() {
+        const command = commandInput.text.trim()
+
+        if (command.length === 0)
+            return
+
+        addToHistory(command)
+        executeCommand(command)
+
+        commandInput.text = ""
+        historyIndex = commandHistory.length
     }
 
     function executeCommand(command) {
@@ -40,26 +138,42 @@ SectionCard {
                 "getvcp <code>\n" +
                 "setvcp <code> <value>\n" +
                 "clear\n" +
-                "help"
+                "help\n\n" +
+                "VCP codes are hexadecimal.\n" +
+                "Values are decimal unless prefixed with 0x."
             )
+
             return
         }
 
         if (root.monitorId.length === 0) {
-            appendOutput("Error: No monitor selected")
+            appendOutput(
+                "Error: No monitor selected"
+            )
+
             return
         }
 
         if (commandName === "getvcp") {
             if (parts.length !== 2) {
-                appendOutput("Usage: getvcp <code>")
+                appendOutput(
+                    "Usage: getvcp <code>"
+                )
+
                 return
             }
 
-            const code = parseInt(parts[1], 16)
+            const code =
+                root.parseVcpCode(parts[1])
 
-            if (isNaN(code)) {
-                appendOutput("Error: Invalid VCP code")
+            if (isNaN(code)
+                    || code < 0
+                    || code > 0xFF) {
+
+                appendOutput(
+                    "Error: Invalid VCP code"
+                )
+
                 return
             }
 
@@ -70,13 +184,18 @@ SectionCard {
                 )
 
             if (!result.success) {
-                appendOutput("Error: " + result.error)
+                appendOutput(
+                    "Error: " + result.error
+                )
+
                 return
             }
 
             appendOutput(
-                "Current: " + result.current +
-                "  Maximum: " + result.maximum
+                "Current: "
+                + result.current
+                + "  Maximum: "
+                + result.maximum
             )
 
             return
@@ -87,18 +206,35 @@ SectionCard {
                 appendOutput(
                     "Usage: setvcp <code> <value>"
                 )
+
                 return
             }
 
-            const code = parseInt(parts[1], 16)
+            const code =
+                root.parseVcpCode(parts[1])
 
-            // İlk etapta value decimal.
-            const value = parseInt(parts[2], 10)
+            const value =
+                root.parseVcpValue(parts[2])
 
-            if (isNaN(code) || isNaN(value)) {
+            if (isNaN(code)
+                    || code < 0
+                    || code > 0xFF) {
+
                 appendOutput(
-                    "Error: Invalid code or value"
+                    "Error: Invalid VCP code"
                 )
+
+                return
+            }
+
+            if (isNaN(value)
+                    || value < 0
+                    || value > 0xFFFF) {
+
+                appendOutput(
+                    "Error: Invalid VCP value"
+                )
+
                 return
             }
 
@@ -110,23 +246,41 @@ SectionCard {
                 )
 
             if (!result.success) {
-                appendOutput("Error: " + result.error)
+                appendOutput(
+                    "Error: " + result.error
+                )
+
                 return
             }
 
             appendOutput(
-                "OK: VCP 0x" +
-                code.toString(16).toUpperCase() +
-                " set to " +
-                value
+                "OK: VCP "
+                + root.codeString(code)
+                + " set to "
+                + value
+                + " (0x"
+                + value
+                    .toString(16)
+                    .toUpperCase()
+                    .padStart(2, "0")
+                + ")"
             )
 
             return
         }
 
         appendOutput(
-            "Unknown command: " + commandName
+            "Unknown command: "
+            + commandName
         )
+    }
+
+    function codeString(code) {
+        return "0x"
+            + Number(code)
+                .toString(16)
+                .toUpperCase()
+                .padStart(2, "0")
     }
 
     ColumnLayout {
@@ -150,6 +304,7 @@ SectionCard {
                 text: "VCP Terminal"
 
                 color: Theme.textPrimary
+
                 font.pixelSize: Theme.fontMd
                 font.weight: Theme.fontWeightBold
             }
@@ -164,6 +319,7 @@ SectionCard {
             Layout.fillHeight: true
 
             radius: Theme.radiusSmall
+
             color: Theme.background
 
             border.width: 1
@@ -189,6 +345,10 @@ SectionCard {
 
                     font.family: "Consolas"
                     font.pixelSize: Theme.fontSm
+
+                    onTextChanged: {
+                        cursorPosition = length
+                    }
                 }
             }
         }
@@ -202,24 +362,32 @@ SectionCard {
                 text: ">"
 
                 color: Theme.primary
+
                 font.family: "Consolas"
                 font.pixelSize: Theme.fontMd
                 font.weight: Theme.fontWeightBold
             }
 
-            TextField {
+            AppTextField {
                 id: commandInput
 
                 Layout.fillWidth: true
 
                 placeholderText: "getvcp 10"
-
                 font.family: "Consolas"
 
-                onAccepted: {
-                    root.executeCommand(text)
+                Keys.onUpPressed: function(event) {
+                    root.previousCommand()
+                    event.accepted = true
+                }
 
-                    text = ""
+                Keys.onDownPressed: function(event) {
+                    root.nextCommand()
+                    event.accepted = true
+                }
+
+                onAccepted: {
+                    root.submitCommand()
                 }
             }
 
@@ -228,11 +396,8 @@ SectionCard {
                     "qrc:/qt/qml/VCPilot/assets/icons/send.svg"
 
                 onClicked: {
-                    root.executeCommand(
-                        commandInput.text
-                    )
-
-                    commandInput.text = ""
+                    root.submitCommand()
+                    commandInput.forceActiveFocus()
                 }
             }
         }

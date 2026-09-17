@@ -47,7 +47,7 @@ ApplicationWindow {
                 },
                 {
                     text: "Advanced",
-                    icon: "qrc:/qt/qml/VCPilot/assets/icons/terminal.svg"
+                    icon: "qrc:/qt/qml/VCPilot/assets/icons/wrench.svg"
                 }
             ]
 

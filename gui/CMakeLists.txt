@@ -56,6 +56,7 @@ qt_add_qml_module(vcpilot_gui
         qml/components/AudioControl.qml
         qml/components/VcpFeatureTable.qml
         qml/components/VcpTerminal.qml
+        qml/components/AppTextField.qml
         qml/pages/DashboardPage.qml
         qml/pages/ControlsPage.qml
         qml/pages/AdvancedPage.qml
@@ -79,6 +80,7 @@ qt_add_qml_module(vcpilot_gui
         assets/icons/volume-2.svg
         assets/icons/send.svg
         assets/icons/terminal.svg
+        assets/icons/wrench.svg
         assets/images/contrast-calib.png
 )
 
