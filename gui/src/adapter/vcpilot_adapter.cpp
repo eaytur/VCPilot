@@ -311,9 +311,6 @@ void VCPilotAdapter::refreshMonitors() {
             QString mccsVersion;
 
             if (monitor.capabilities) {
-                qDebug() << "  MCCS:" << QString::fromStdString(monitor.capabilities->mccsVersion);
-
-                qDebug() << "  VCP feature count:" << monitor.capabilities->vcpFeatures.size();
 
                 mccsVersion = QString::fromStdString(monitor.capabilities->mccsVersion);
 
