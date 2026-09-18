@@ -15,6 +15,8 @@ ApplicationWindow {
 
     visible: true
 
+    flags: Qt.Window | Qt.FramelessWindowHint
+
     color: Theme.background
 
     property int currentPage: Main.Dashboard
@@ -29,6 +31,13 @@ ApplicationWindow {
     ColumnLayout {
         anchors.fill: parent
         spacing: 0
+
+        AppTitleBar {
+            Layout.fillWidth: true
+            Layout.preferredHeight: 36
+
+            targetWindow: window
+        }
 
         AppHeader {
             Layout.fillWidth: true
