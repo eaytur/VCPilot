@@ -57,7 +57,6 @@ qt_add_qml_module(vcpilot_gui
         qml/components/VcpFeatureTable.qml
         qml/components/VcpTerminal.qml
         qml/components/AppTextField.qml
-        qml/components/AppTitleBar.qml
         qml/components/TitleBarButton.qml
         qml/pages/DashboardPage.qml
         qml/pages/ControlsPage.qml

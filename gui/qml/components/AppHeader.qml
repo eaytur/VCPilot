@@ -1,11 +1,14 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import QtQuick.Window
 
 import VCPilot
 
 Rectangle {
     id: root
+
+    required property Window targetWindow
 
     property var navigationItems: []
     property int currentIndex: 0
@@ -16,14 +19,19 @@ Rectangle {
     implicitHeight: 72
 
     color: Theme.background
-
     border.width: 0
+
+    function toggleMaximized() {
+        if (root.targetWindow.visibility === Window.Maximized)
+            root.targetWindow.showNormal()
+        else
+            root.targetWindow.showMaximized()
+    }
 
     RowLayout {
         anchors {
             fill: parent
             leftMargin: Theme.spacingXl
-            rightMargin: Theme.spacingXl
         }
 
         spacing: Theme.spacingLg
@@ -32,26 +40,39 @@ Rectangle {
             spacing: Theme.spacingMd
 
             AppIcon {
-                source: "qrc:/qt/qml/VCPilot/assets/icons/monitor.svg"
+                source:
+                    "qrc:/qt/qml/VCPilot/assets/icons/monitor.svg"
                 iconSize: 30
-                iconColor: Theme.primary
+                iconColor: "transparent"
             }
 
-            ColumnLayout {
-                spacing: 0
+            Text {
+                text: "VCPilot"
 
-                Text {
-                    text: "VCPilot"
-
-                    color: Theme.textPrimary
-                    font.pixelSize: Theme.fontLg
-                    font.weight: Theme.fontWeightBold
-                }
+                color: Theme.textPrimary
+                font.pixelSize: Theme.fontLg
+                font.weight: Theme.fontWeightBold
             }
         }
 
         Item {
             Layout.fillWidth: true
+            Layout.fillHeight: true
+
+            MouseArea {
+                anchors.fill: parent
+
+                acceptedButtons: Qt.LeftButton
+
+                onPressed: function(mouse) {
+                    if (mouse.button === Qt.LeftButton)
+                        root.targetWindow.startSystemMove()
+                }
+
+                onDoubleClicked: {
+                    root.toggleMaximized()
+                }
+            }
         }
 
         NavigationBar {
@@ -69,6 +90,22 @@ Rectangle {
 
         Item {
             Layout.fillWidth: true
+            Layout.fillHeight: true
+
+            MouseArea {
+                anchors.fill: parent
+
+                acceptedButtons: Qt.LeftButton
+
+                onPressed: function(mouse) {
+                    if (mouse.button === Qt.LeftButton)
+                        root.targetWindow.startSystemMove()
+                }
+
+                onDoubleClicked: {
+                    root.toggleMaximized()
+                }
+            }
         }
 
         AppSwitch {
@@ -82,6 +119,41 @@ Rectangle {
 
             onToggled: function(checked) {
                 Theme.darkMode = checked
+            }
+        }
+
+        Item {
+            Layout.preferredWidth: Theme.spacingSm
+        }
+
+        TitleBarButton {
+            iconSource:
+                "qrc:/qt/qml/VCPilot/assets/icons/window-minimize.svg"
+
+            onClicked: {
+                root.targetWindow.showMinimized()
+            }
+        }
+
+        TitleBarButton {
+            iconSource:
+                root.targetWindow.visibility === Window.Maximized
+                    ? "qrc:/qt/qml/VCPilot/assets/icons/window-restore.svg"
+                    : "qrc:/qt/qml/VCPilot/assets/icons/window-maximize.svg"
+
+            onClicked: {
+                root.toggleMaximized()
+            }
+        }
+
+        TitleBarButton {
+            iconSource:
+                "qrc:/qt/qml/VCPilot/assets/icons/window-close.svg"
+
+            closeButton: true
+
+            onClicked: {
+                root.targetWindow.close()
             }
         }
     }

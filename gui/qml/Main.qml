@@ -32,16 +32,11 @@ ApplicationWindow {
         anchors.fill: parent
         spacing: 0
 
-        AppTitleBar {
-            Layout.fillWidth: true
-            Layout.preferredHeight: 36
-
-            targetWindow: window
-        }
-
         AppHeader {
             Layout.fillWidth: true
             Layout.preferredHeight: 72
+
+            targetWindow: window
 
             currentIndex: window.currentPage
 
