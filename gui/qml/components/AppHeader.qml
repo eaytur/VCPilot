@@ -41,7 +41,7 @@ Rectangle {
 
             AppIcon {
                 source:
-                    "qrc:/qt/qml/VCPilot/assets/icons/monitor.svg"
+                    "qrc:/qt/qml/VCPilot/assets/icons/vcpilot-logo.svg"
                 iconSize: 30
                 iconColor: "transparent"
             }

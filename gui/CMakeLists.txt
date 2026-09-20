@@ -86,6 +86,7 @@ qt_add_qml_module(vcpilot_gui
         assets/icons/window-maximize.svg
         assets/icons/window-restore.svg
         assets/icons/window-close.svg
+        assets/icons/vcpilot-logo.svg
         assets/images/contrast-calib.png
 )
 
