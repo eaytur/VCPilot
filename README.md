@@ -1,4 +1,16 @@
-<h1 align="center">VCPilot</h1>
+<p align="center">
+  <img src="assets/vcpilot-banner.png"
+       alt="VCPilot"
+       width="100%">
+</p>
+
+<p align="center">
+  <strong>VCPilot</strong> is a modern Windows monitor control application built with C++23 and Qt 6 / QML.
+</p>
+
+<p align="center">
+  Control brightness, contrast, input source, audio, and more through DDC/CI (MCCS).
+</p>
 
 <p align="center">
   <strong>VCPilot</strong> is a modern Windows monitor control application built with C++23 and Qt 6 / QML.
