@@ -39,11 +39,18 @@ Rectangle {
         RowLayout {
             spacing: Theme.spacingMd
 
-            AppIcon {
+            Image {
                 source:
                     "qrc:/qt/qml/VCPilot/assets/icons/vcpilot-logo.svg"
-                iconSize: 30
-                iconColor: "transparent"
+
+                sourceSize.width: 30
+                sourceSize.height: 30
+
+                Layout.preferredWidth: 30
+                Layout.preferredHeight: 30
+
+                fillMode: Image.PreserveAspectFit
+                smooth: true
             }
 
             Text {
@@ -126,34 +133,40 @@ Rectangle {
             Layout.preferredWidth: Theme.spacingSm
         }
 
-        TitleBarButton {
-            iconSource:
-                "qrc:/qt/qml/VCPilot/assets/icons/window-minimize.svg"
+        RowLayout {
+            spacing: 0
 
-            onClicked: {
-                root.targetWindow.showMinimized()
+            Layout.alignment: Qt.AlignTop
+
+            TitleBarButton {
+                iconSource:
+                    "qrc:/qt/qml/VCPilot/assets/icons/window-minimize.svg"
+
+                onClicked: {
+                    root.targetWindow.showMinimized()
+                }
             }
-        }
 
-        TitleBarButton {
-            iconSource:
-                root.targetWindow.visibility === Window.Maximized
-                    ? "qrc:/qt/qml/VCPilot/assets/icons/window-restore.svg"
-                    : "qrc:/qt/qml/VCPilot/assets/icons/window-maximize.svg"
+            TitleBarButton {
+                iconSource:
+                    root.targetWindow.visibility === Window.Maximized
+                        ? "qrc:/qt/qml/VCPilot/assets/icons/window-restore.svg"
+                        : "qrc:/qt/qml/VCPilot/assets/icons/window-maximize.svg"
 
-            onClicked: {
-                root.toggleMaximized()
+                onClicked: {
+                    root.toggleMaximized()
+                }
             }
-        }
 
-        TitleBarButton {
-            iconSource:
-                "qrc:/qt/qml/VCPilot/assets/icons/window-close.svg"
+            TitleBarButton {
+                iconSource:
+                    "qrc:/qt/qml/VCPilot/assets/icons/window-close.svg"
 
-            closeButton: true
+                closeButton: true
 
-            onClicked: {
-                root.targetWindow.close()
+                onClicked: {
+                    root.targetWindow.close()
+                }
             }
         }
     }
