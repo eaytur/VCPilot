@@ -9,6 +9,8 @@ ComboBox {
     implicitWidth: 180
     implicitHeight: 40
 
+    hoverEnabled: true
+
     leftPadding: Theme.spacingMd
     rightPadding: 38
 
@@ -17,10 +19,9 @@ ComboBox {
     contentItem: Text {
         text: root.displayText
 
-        color:
-            root.enabled
-            ? Theme.textPrimary
-            : Theme.textMuted
+        color: root.enabled
+               ? Theme.textPrimary
+               : Theme.textMuted
 
         font.pixelSize: Theme.fontSm
 
@@ -31,17 +32,17 @@ ComboBox {
     background: Rectangle {
         radius: Theme.radiusSmall
 
-        color:
-            root.pressed
-            ? Theme.surfaceHover
-            : Theme.surfaceRaised
+        color: root.pressed
+               ? Theme.surfaceHover
+               : root.hovered
+                 ? Theme.surfaceHover
+                 : Theme.surfaceRaised
 
-        border.width: root.activeFocus ? 1 : 1
+        border.width: 1
 
-        border.color:
-            root.activeFocus
-            ? Theme.primary
-            : Theme.border
+        border.color: root.activeFocus
+                      ? Theme.primary
+                      : Theme.border
 
         Behavior on color {
             ColorAnimation {
@@ -68,17 +69,19 @@ ComboBox {
 
             text: "⌄"
 
-            color:
-                root.pressed
-                ? Theme.primary
-                : Theme.textSecondary
+            color: root.pressed || root.hovered
+                   ? Theme.primary
+                   : Theme.textSecondary
 
             font.pixelSize: Theme.fontLg
 
-            rotation:
-                root.popup.visible
-                ? 180
-                : 0
+            rotation: root.popup.visible ? 180 : 0
+
+            Behavior on color {
+                ColorAnimation {
+                    duration: Theme.animationFast
+                }
+            }
 
             Behavior on rotation {
                 NumberAnimation {
@@ -89,30 +92,47 @@ ComboBox {
     }
 
     delegate: ItemDelegate {
-        required property var modelData
+        id: delegateItem
 
-        width: root.width
+        required property int index
+
+        width: root.width - root.popup.leftPadding
+                          - root.popup.rightPadding
         height: 38
+
+        hoverEnabled: true
 
         leftPadding: Theme.spacingMd
         rightPadding: Theme.spacingMd
 
-        contentItem: Text {
-            text: modelData
+        highlighted: root.highlightedIndex === index
 
-            color: Theme.textPrimary
+        contentItem: Text {
+            text: root.textAt(delegateItem.index)
+
+            color: delegateItem.enabled
+                   ? Theme.textPrimary
+                   : Theme.textMuted
+
             font.pixelSize: Theme.fontSm
 
             verticalAlignment: Text.AlignVCenter
+            elide: Text.ElideRight
         }
 
         background: Rectangle {
             radius: Theme.radiusSmall
 
-            color:
-                parent.highlighted
-                ? Theme.surfaceHover
-                : "transparent"
+            color: delegateItem.hovered
+                   || delegateItem.highlighted
+                   ? Theme.surfaceHover
+                   : "transparent"
+
+            Behavior on color {
+                ColorAnimation {
+                    duration: Theme.animationFast
+                }
+            }
         }
     }
 
@@ -121,11 +141,12 @@ ComboBox {
 
         width: root.width
 
-        implicitHeight:
-            contentItem.implicitHeight
-            + Theme.spacingSm
-
         padding: Theme.spacingXs
+
+        implicitHeight: Math.min(
+            contentItem.implicitHeight + topPadding + bottomPadding,
+            280
+        )
 
         background: Rectangle {
             color: Theme.surfaceRaised
@@ -149,8 +170,7 @@ ComboBox {
 
             spacing: 2
 
-            ScrollIndicator.vertical:
-                ScrollIndicator {}
+            ScrollIndicator.vertical: ScrollIndicator {}
         }
     }
 }

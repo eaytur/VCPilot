@@ -5,6 +5,7 @@ import QtQuick.Layouts
 import VCPilot
 
 ApplicationWindow {
+
     id: window
 
     width: 1400
@@ -21,11 +22,25 @@ ApplicationWindow {
 
     property int currentPage: Main.Dashboard
     property string selectedMonitorId: ""
+    property bool exiting: false
 
     enum Page {
         Dashboard,
         Controls,
-        Advanced
+        Advanced,
+        Widgets
+    }
+
+    function shutdownApplication() {
+        exiting = true
+        widgetsPage.shutdownWidgets()
+    }
+
+    onClosing: function(close) {
+        if (!exiting) {
+            close.accepted = false
+            hide()
+        }
     }
 
     ColumnLayout {
@@ -52,6 +67,10 @@ ApplicationWindow {
                 {
                     text: "Advanced",
                     icon: "qrc:/qt/qml/VCPilot/assets/icons/wrench.svg"
+                },
+                {
+                    text: "Widgets",
+                    icon: "qrc:/qt/qml/VCPilot/assets/icons/layout-grid.svg"
                 }
             ]
 
@@ -102,6 +121,12 @@ ApplicationWindow {
             AdvancedPage {
                 selectedMonitorId: window.selectedMonitorId
             }
+
+            WidgetsPage {
+                id: widgetsPage
+                
+                selectedMonitorId: window.selectedMonitorId
+            }
         }
 
         AppFooter {
@@ -110,5 +135,9 @@ ApplicationWindow {
 
             selectedMonitorId: window.selectedMonitorId
         }
+    }
+    
+    Component.onCompleted: {
+        VCPilotAdapter.refreshMonitors()
     }
 }

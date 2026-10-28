@@ -1,6 +1,7 @@
 find_package(Qt6 REQUIRED COMPONENTS
     Quick
     QuickControls2
+    Widgets
 )
 
 qt_standard_project_setup(REQUIRES 6.8)
@@ -61,6 +62,9 @@ qt_add_qml_module(vcpilot_gui
         qml/pages/DashboardPage.qml
         qml/pages/ControlsPage.qml
         qml/pages/AdvancedPage.qml
+        qml/pages/WidgetsPage.qml
+        qml/widgets/QuickSwitchWidget.qml
+        qml/widgets/QuickSwitchContent.qml
 
     RESOURCES
         assets/icons/layout-dashboard.svg
@@ -87,6 +91,12 @@ qt_add_qml_module(vcpilot_gui
         assets/icons/window-restore.svg
         assets/icons/window-close.svg
         assets/icons/vcpilot-logo.svg
+        assets/icons/eye.svg
+        assets/icons/eye-off.svg
+        assets/icons/trash-2.svg
+        assets/icons/layout-grid.svg
+        assets/icons/settings-2.svg
+        assets/icons/arrow-left-right.svg
         assets/images/contrast-calib.png
 )
 
@@ -95,6 +105,7 @@ target_link_libraries(vcpilot_gui
         Qt6::Quick
         Qt6::QuickControls2
         Qt6::Concurrent
+        Qt6::Widgets
         vcpilot_core
 )
 

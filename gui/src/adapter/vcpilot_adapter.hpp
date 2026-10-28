@@ -37,6 +37,9 @@ class VCPilotAdapter : public QObject {
     Q_INVOKABLE QVariantMap getVcp(const QString& monitorId, int code);
     Q_INVOKABLE QVariantMap setVcp(const QString& monitorId, int code, int value);
 
+    Q_INVOKABLE QVariantList loadWidgets() const;
+    Q_INVOKABLE bool saveWidgets(const QVariantList& widgets) const;
+
   signals:
     void monitorsChanged();
     void inputSourcesChanged();

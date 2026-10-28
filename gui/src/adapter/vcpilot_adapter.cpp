@@ -6,6 +6,14 @@
 #include <QVariantMap>
 #include <QtConcurrent>
 
+#include <QDir>
+#include <QFile>
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QSaveFile>
+#include <QStandardPaths>
+
 #include <optional>
 #include <string_view>
 
@@ -613,4 +621,64 @@ QVariantMap VCPilotAdapter::setVcp(const QString& monitorId, int code, int value
     response["success"] = true;
 
     return response;
+}
+
+QVariantList VCPilotAdapter::loadWidgets() const {
+    const auto directory = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
+
+    QFile file(directory + "/widgets.json");
+
+    if (!file.exists())
+        return {};
+
+    if (!file.open(QIODevice::ReadOnly)) {
+        qWarning() << "Failed to open widgets.json:" << file.errorString();
+        return {};
+    }
+
+    QJsonParseError error;
+
+    const auto document = QJsonDocument::fromJson(file.readAll(), &error);
+
+    if (error.error != QJsonParseError::NoError || !document.isObject()) {
+        qWarning() << "Invalid widgets.json:" << error.errorString();
+        return {};
+    }
+
+    const auto object = document.object();
+
+    if (object.value("version").toInt() != 1) {
+        qWarning() << "Unsupported widget config version";
+        return {};
+    }
+
+    return object.value("widgets").toArray().toVariantList();
+}
+
+bool VCPilotAdapter::saveWidgets(const QVariantList& widgets) const {
+
+    const auto directory = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
+
+    if (!QDir().mkpath(directory)) {
+        qWarning() << "Failed to create widget directory";
+        return false;
+    }
+
+    QSaveFile file(directory + "/widgets.json");
+
+    if (!file.open(QIODevice::WriteOnly)) {
+        qWarning() << "Failed to save widgets:" << file.errorString();
+        return false;
+    }
+
+    QJsonObject root;
+    root["version"] = 1;
+    root["widgets"] = QJsonArray::fromVariantList(widgets);
+
+    const auto document = QJsonDocument(root);
+
+    if (file.write(document.toJson()) < 0)
+        return false;
+
+    return file.commit();
 }
